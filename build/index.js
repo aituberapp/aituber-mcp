@@ -30,8 +30,8 @@ const KNOWLEDGE = {
 5. **Character Template** - Character-driven story format with consistent characters throughout. Set templateId: "character". Only supports inputType: "idea" (AI writes the script). The template handles mediaType and style automatically.
 
 All types support voice selection, captions, aspect ratio, and other common settings.`,
-    "skeleton": `Skeleton videos are a viral video format where subjects are shown in X-ray/skeleton style. Created by setting templateId: "skeleton" in POST /videos/generate. The template automatically selects the right AI model and visual style. You provide a script or idea, and the template handles the rest. Example: { "script": "What happens if you eat 100 bananas", "templateId": "skeleton" }`,
-    "character": `Character template creates story-driven videos with consistent AI characters throughout. Set templateId: "character" in POST /videos/generate. Important: character template only works with inputType: "idea" (the AI writes the script to maintain character consistency). You provide a topic, not a full script. Example: { "script": "A detective solves a mystery in Tokyo", "templateId": "character", "inputType": "idea", "expectedDurationSeconds": 60 }`,
+    "skeleton": `Skeleton videos are a viral video format where subjects are shown in X-ray/skeleton style. Created by setting templateId: "skeleton" in POST /videos/generate. The template automatically selects the right AI model and visual style. IMPORTANT: Do NOT send mediaType, imageStyleId, or imageQuality when using this template. The template handles all visual settings. Just send script + templateId. Example: { "script": "What happens if you eat 100 bananas", "templateId": "skeleton" }`,
+    "character": `Character template creates story-driven videos with consistent AI characters throughout. Set templateId: "character" in POST /videos/generate. Important: character template only works with inputType: "idea" (the AI writes the script to maintain character consistency). You provide a topic, not a full script. IMPORTANT: Do NOT send mediaType, imageStyleId, or imageQuality when using this template. The template handles all visual settings. Example: { "script": "A detective solves a mystery in Tokyo", "templateId": "character", "inputType": "idea", "expectedDurationSeconds": 60 }`,
     "visual control": `By default, AITuber's AI automatically decides what visuals to show for each part of your narration. For more control, add visual instructions in brackets before each narration segment:
 
 "[A dark forest at night] The wind howled through the trees. [Glowing eyes in the darkness] Something was watching from the shadows."
@@ -161,7 +161,7 @@ const ENDPOINTS = [
                 name: "templateId",
                 in: "body",
                 type: "string",
-                description: 'Specialized video template. "skeleton": viral X-ray/skeleton style ("what happens if..." format). "character": character-driven story (requires inputType "idea"). Leave empty for standard faceless narration videos. Templates override mediaType and imageStyleId automatically.',
+                description: 'Specialized video template. "skeleton": viral X-ray/skeleton style ("what happens if..." format). "character": character-driven story (requires inputType "idea"). Leave empty for standard faceless narration videos. IMPORTANT: When using a template, do NOT send mediaType, imageStyleId, or imageQuality. The template handles these automatically.',
             },
             {
                 name: "videoQuality",
