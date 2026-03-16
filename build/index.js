@@ -129,28 +129,28 @@ const ENDPOINTS = [
                 description: 'Visual art style: "photorealistic" (default), "cinematic", "anime", "3d-pixar", "watercolor", "comic-book", "oil-painting", "pencil-sketch", etc.',
             },
             {
-                name: "title",
-                in: "body",
-                type: "string",
-                description: "Custom video title (max 80 chars). Auto-generated if omitted.",
-            },
-            {
                 name: "expectedDurationSeconds",
                 in: "body",
                 type: "number",
-                description: "Target video duration in seconds. Required when inputType is idea. E.g., 60 for 1-minute video.",
+                description: "Target video duration in seconds (15-420). Required when inputType is idea. E.g., 60 for 1-minute, 180 for 3-minute, 420 for 7-minute video.",
             },
             {
                 name: "captionStyleId",
                 in: "body",
                 type: "string",
-                description: 'Caption style: "wrap-1" (default, MrBeast-style), "classic", "karaoke", "box", "minimal", "handwritten", "neon".',
+                description: 'Caption style: "wrap-1" (default, word highlight with 2-word groups), "hormozi" (bold uppercase yellow highlight), "classic" (white text, black outline), "karaoke" (words pop in one by one), "box" (single word in solid box), "minimal" (subtle highlight), "handwritten" (handwritten font), "neon" (glowing neon text).',
             },
             {
                 name: "captionsEnabled",
                 in: "body",
                 type: "boolean",
                 description: "Show captions. Default: true. Recommended for engagement.",
+            },
+            {
+                name: "captionPosition",
+                in: "body",
+                type: "string",
+                description: 'Where to position captions on the video. "bottom" (default), "center", or "top".',
             },
             {
                 name: "templateId",
@@ -162,7 +162,7 @@ const ENDPOINTS = [
                 name: "videoQuality",
                 in: "body",
                 type: "string",
-                description: 'For video mediaType only. "standard" (default): balanced quality and speed. "premium": higher detail, slower generation.',
+                description: 'For video mediaType only. "basic": fastest, lower quality. "good" (default): balanced. "premium": highest quality, slower.',
             },
         ],
         auth: true,
@@ -440,7 +440,7 @@ server.tool("search_api", "Search the AITuber API to find endpoints for creating
         content: [
             {
                 type: "text",
-                text: parts.join("\n\n---\n\n"),
+                text: parts.join("\n\n---\n\n") + "\n\n**Full API docs:** https://app.aituber.app/api-docs",
             },
         ],
     };
