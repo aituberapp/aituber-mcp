@@ -1,7 +1,7 @@
 {
   "name": "@aituber/mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for AITuber API. Create AI videos, check credits, export to MP4.",
+  "description": "MCP server for AITuber - AI video creation tool. Generate videos with AI narration, visuals, and captions for YouTube Shorts, TikTok, Instagram Reels, and long-form content. Supports AI images, video clips, stock footage, and viral templates.",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -16,11 +16,36 @@
   ],
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
     "ai-video",
+    "ai-video-generator",
     "aituber",
-    "video-generation"
+    "video-generation",
+    "youtube-shorts",
+    "tiktok",
+    "instagram-reels",
+    "faceless-video",
+    "text-to-video",
+    "ai-narration",
+    "video-automation",
+    "content-creation",
+    "long-form-video",
+    "ai-voices",
+    "video-publishing",
+    "claude",
+    "claude-desktop",
+    "cursor",
+    "windsurf"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aituberapp/aituber-mcp.git"
+  },
+  "homepage": "https://aituber.app",
+  "bugs": {
+    "url": "https://github.com/aituberapp/aituber-mcp/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "zod": "^4.2.1"
