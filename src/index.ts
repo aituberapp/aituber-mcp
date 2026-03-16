@@ -15,7 +15,7 @@ const MAX_RESPONSE_LENGTH = 50_000;
 
 if (!API_KEY) {
   console.error(
-    "AITUBER_API_KEY is required. Get your key at https://app.aituber.app/dashboard/settings"
+    "AITUBER_API_KEY is required. Get your key at https://app.aituber.app/dashboard/api-keys"
   );
   process.exit(1);
 }

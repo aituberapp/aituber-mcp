@@ -10,7 +10,7 @@ const BASE_URL = process.env.AITUBER_API_BASE_URL ?? "https://app.aituber.app/ap
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_RESPONSE_LENGTH = 50_000;
 if (!API_KEY) {
-    console.error("AITUBER_API_KEY is required. Get your key at https://app.aituber.app/dashboard/settings");
+    console.error("AITUBER_API_KEY is required. Get your key at https://app.aituber.app/dashboard/api-keys");
     process.exit(1);
 }
 const ENDPOINTS = [

@@ -2,7 +2,7 @@
 
 Create AI-powered videos from any MCP-compatible client. Generate videos with AI narration, visuals, and synced captions for YouTube Shorts, TikTok, Instagram Reels, and long-form content. Supports AI-generated images, video clips, stock footage, and viral templates like skeleton and character styles. AITuber handles script writing, voice synthesis, visual generation, and video rendering.
 
-[AITuber](https://aituber.app) | [API Documentation](https://app.aituber.app/api-docs) | [Get API Key](https://app.aituber.app/dashboard/settings)
+[AITuber](https://aituber.app) | [API Documentation](https://app.aituber.app/api-docs) | [Get API Key](https://app.aituber.app/dashboard/api-keys)
 
 ## What you can do
 
@@ -21,7 +21,7 @@ Create AI-powered videos from any MCP-compatible client. Generate videos with AI
 
 ### 1. Get your API key
 
-Go to [app.aituber.app/dashboard/settings](https://app.aituber.app/dashboard/settings) and create an API key.
+Go to [app.aituber.app/dashboard/settings](https://app.aituber.app/dashboard/api-keys) and create an API key.
 
 ### 2. Install
 
@@ -122,15 +122,15 @@ execute_api(method: "POST", path: "/videos/generate", body: {
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `AITUBER_API_KEY` | Yes | - | Your API key from [AITuber dashboard](https://app.aituber.app/dashboard/settings) |
+| `AITUBER_API_KEY` | Yes | - | Your API key from [AITuber dashboard](https://app.aituber.app/dashboard/api-keys) |
 | `AITUBER_API_BASE_URL` | No | `https://app.aituber.app/api/v1` | API base URL (override for self-hosted or testing) |
 
 ## Links
 
 - [AITuber](https://aituber.app) - AI video creation tool
 - [API Documentation](https://app.aituber.app/api-docs) - Interactive API reference
-- [Dashboard](https://app.aituber.app/dashboard) - Manage videos, settings, and billing
-- [Get API Key](https://app.aituber.app/dashboard/settings) - Create your API key
+- [Dashboard](https://app.aituber.app/dashboard) - Manage videos and billing
+- [API Keys](https://app.aituber.app/dashboard/api-keys) - Create and manage your API keys
 
 ## License
 
