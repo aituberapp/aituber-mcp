@@ -39,8 +39,39 @@ interface Endpoint {
   description: string;
   params: EndpointParam[];
   auth: boolean;
-  example: string | Record<string, unknown>;
+  example?: string | Record<string, unknown>;
+  examples?: Record<string, Record<string, unknown>>;
 }
+
+// ---------------------------------------------------------------------------
+// Knowledge base (helps the search tool answer conceptual questions)
+// ---------------------------------------------------------------------------
+
+const KNOWLEDGE: Record<string, string> = {
+  "video types": `AITuber supports 5 video types, all created via POST /videos/generate:
+
+1. **Faceless Narration (images)** - Default. AI generates unique images for each segment with smooth Ken Burns animation. The classic "faceless video" style used by top YouTube channels. Set mediaType: "images" (or omit, it's the default).
+
+2. **Faceless Narration (video clips)** - AI generates short video clips instead of images. More dynamic, higher credit cost. Set mediaType: "video".
+
+3. **Stock Footage** - Automatically finds and matches real stock footage to narration. Great for news, educational, documentary content. Set mediaType: "stock".
+
+4. **Skeleton Template** - Viral "what happens if..." X-ray style videos. Uses a specialized AI model for skeleton/X-ray visuals. Set templateId: "skeleton". The template handles mediaType and style automatically.
+
+5. **Character Template** - Character-driven story format with consistent characters throughout. Set templateId: "character". Only supports inputType: "idea" (AI writes the script). The template handles mediaType and style automatically.
+
+All types support voice selection, captions, aspect ratio, and other common settings.`,
+
+  "skeleton": `Skeleton videos are a viral video format where subjects are shown in X-ray/skeleton style. Created by setting templateId: "skeleton" in POST /videos/generate. The template automatically selects the right AI model and visual style. You provide a script or idea, and the template handles the rest. Example: { "script": "What happens if you eat 100 bananas", "templateId": "skeleton" }`,
+
+  "character": `Character template creates story-driven videos with consistent AI characters throughout. Set templateId: "character" in POST /videos/generate. Important: character template only works with inputType: "idea" (the AI writes the script to maintain character consistency). You provide a topic, not a full script. Example: { "script": "A detective solves a mystery in Tokyo", "templateId": "character", "inputType": "idea", "expectedDurationSeconds": 60 }`,
+
+  "templates": `AITuber has 2 video templates that create specialized video formats:
+- **skeleton** - X-ray/skeleton style viral videos ("what happens if..." format)
+- **character** - Character-driven story videos with consistent characters
+
+Set templateId in POST /videos/generate. Templates override mediaType and imageStyleId automatically. For regular faceless narration videos, don't set templateId.`,
+};
 
 const ENDPOINTS: Endpoint[] = [
   {
@@ -170,13 +201,44 @@ const ENDPOINTS: Endpoint[] = [
         type: "boolean",
         description: "Show captions. Default: true. Recommended for engagement.",
       },
+      {
+        name: "templateId",
+        in: "body",
+        type: "string",
+        description:
+          'Specialized video template. "skeleton": viral X-ray/skeleton style ("what happens if..." format). "character": character-driven story (requires inputType "idea"). Leave empty for standard faceless narration videos. Templates override mediaType and imageStyleId automatically.',
+      },
+      {
+        name: "videoQuality",
+        in: "body",
+        type: "string",
+        description:
+          'For video mediaType only. "standard" (default): balanced quality and speed. "premium": higher detail, slower generation.',
+      },
     ],
     auth: true,
-    example: {
-      script: "5 mind-blowing facts about black holes",
-      inputType: "idea",
-      expectedDurationSeconds: 60,
-      imageStyleId: "cinematic",
+    examples: {
+      "Idea to Video (faceless)": {
+        script: "5 mind-blowing facts about black holes",
+        inputType: "idea",
+        expectedDurationSeconds: 60,
+        imageStyleId: "cinematic",
+      },
+      "Script to Video (video clips)": {
+        script: "The ocean covers over 70 percent of Earth's surface. Beneath the waves lies a world few have ever seen.",
+        mediaType: "video",
+        voiceId: "CwhRBWXzGAHq8TQ4Fs17",
+      },
+      "Skeleton template": {
+        script: "What happens if you eat 100 bananas in one day",
+        templateId: "skeleton",
+      },
+      "Character template": {
+        script: "A detective solves a mystery in a haunted mansion",
+        templateId: "character",
+        inputType: "idea",
+        expectedDurationSeconds: 90,
+      },
     },
   },
   {
@@ -272,6 +334,30 @@ const ENDPOINTS: Endpoint[] = [
 // Search logic
 // ---------------------------------------------------------------------------
 
+function searchKnowledge(query: string): string | null {
+  const lower = query.toLowerCase();
+  for (const [key, value] of Object.entries(KNOWLEDGE)) {
+    if (lower.includes(key)) return value;
+  }
+  // Check for related terms
+  const termMap: Record<string, string> = {
+    "skeleton": "skeleton",
+    "x-ray": "skeleton",
+    "xray": "skeleton",
+    "character": "character",
+    "story": "character",
+    "template": "templates",
+    "video type": "video types",
+    "media type": "video types",
+    "faceless": "video types",
+    "stock": "video types",
+  };
+  for (const [term, key] of Object.entries(termMap)) {
+    if (lower.includes(term)) return KNOWLEDGE[key] ?? null;
+  }
+  return null;
+}
+
 function searchEndpoints(query: string): Endpoint[] {
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
 
@@ -324,13 +410,23 @@ function formatEndpoint(ep: Endpoint): string {
     lines.push("");
   }
 
-  lines.push("**Example:**");
-  if (typeof ep.example === "string") {
-    lines.push(`\`${ep.example}\``);
-  } else {
-    lines.push("```json");
-    lines.push(JSON.stringify(ep.example, null, 2));
-    lines.push("```");
+  if (ep.examples) {
+    lines.push("**Examples:**");
+    for (const [label, body] of Object.entries(ep.examples)) {
+      lines.push(`\n*${label}:*`);
+      lines.push("```json");
+      lines.push(JSON.stringify(body, null, 2));
+      lines.push("```");
+    }
+  } else if (ep.example) {
+    lines.push("**Example:**");
+    if (typeof ep.example === "string") {
+      lines.push(`\`${ep.example}\``);
+    } else {
+      lines.push("```json");
+      lines.push(JSON.stringify(ep.example, null, 2));
+      lines.push("```");
+    }
   }
 
   return lines.join("\n");
@@ -413,9 +509,21 @@ server.tool(
       ),
   },
   async ({ query }) => {
+    const knowledge = searchKnowledge(query);
     const results = searchEndpoints(query);
 
-    if (results.length === 0) {
+    const parts: string[] = [];
+
+    if (knowledge) {
+      parts.push(knowledge);
+    }
+
+    if (results.length > 0) {
+      const formatted = results.map(formatEndpoint).join("\n\n---\n\n");
+      parts.push(formatted);
+    }
+
+    if (parts.length === 0) {
       const allEndpoints = ENDPOINTS.map(
         (ep) => `- ${ep.method} ${ep.path}: ${ep.summary}`
       ).join("\n");
@@ -430,13 +538,11 @@ server.tool(
       };
     }
 
-    const formatted = results.map(formatEndpoint).join("\n\n---\n\n");
-
     return {
       content: [
         {
           type: "text" as const,
-          text: `Found ${results.length} matching endpoint${results.length > 1 ? "s" : ""}:\n\n${formatted}`,
+          text: parts.join("\n\n---\n\n"),
         },
       ],
     };
