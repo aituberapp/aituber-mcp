@@ -32,6 +32,11 @@ const KNOWLEDGE = {
 All types support voice selection, captions, aspect ratio, and other common settings.`,
     "skeleton": `Skeleton videos are a viral video format where subjects are shown in X-ray/skeleton style. Created by setting templateId: "skeleton" in POST /videos/generate. The template automatically selects the right AI model and visual style. You provide a script or idea, and the template handles the rest. Example: { "script": "What happens if you eat 100 bananas", "templateId": "skeleton" }`,
     "character": `Character template creates story-driven videos with consistent AI characters throughout. Set templateId: "character" in POST /videos/generate. Important: character template only works with inputType: "idea" (the AI writes the script to maintain character consistency). You provide a topic, not a full script. Example: { "script": "A detective solves a mystery in Tokyo", "templateId": "character", "inputType": "idea", "expectedDurationSeconds": 60 }`,
+    "visual control": `By default, AITuber's AI automatically decides what visuals to show for each part of your narration. For more control, add visual instructions in brackets before each narration segment:
+
+"[A dark forest at night] The wind howled through the trees. [Glowing eyes in the darkness] Something was watching from the shadows."
+
+Each [bracketed text] tells the AI exactly what to show for that scene. The text after it is the voiceover. This works in script mode with any media type (images, video, stock). No special flag needed.`,
     "templates": `AITuber has 2 video templates that create specialized video formats:
 - **skeleton** - X-ray/skeleton style viral videos ("what happens if..." format)
 - **character** - Character-driven story videos with consistent characters
@@ -84,7 +89,7 @@ const ENDPOINTS = [
                 in: "body",
                 type: "string",
                 required: true,
-                description: "The narration text (script mode) or topic description (idea mode)",
+                description: 'The narration text (script mode) or topic description (idea mode). For more visual control in script mode, add instructions in brackets: "[A dark forest] The wind howled. [Glowing eyes] Something watched." Each [bracket] tells the AI what to show.',
             },
             {
                 name: "inputType",
@@ -187,6 +192,11 @@ const ENDPOINTS = [
                 templateId: "character",
                 inputType: "idea",
                 expectedDurationSeconds: 90,
+            },
+            "Script with visual control": {
+                script: "[A dark forest at night] The wind howled through the ancient trees. [Glowing eyes peering from the shadows] Deep in the darkness, something was watching. [A figure running through moonlight] She had to escape before it was too late.",
+                voiceId: "EXAVITQu4vr4xnSDxMaL",
+                imageStyleId: "cinematic",
             },
         },
     },
@@ -293,6 +303,11 @@ function searchKnowledge(query) {
         "media type": "video types",
         "faceless": "video types",
         "stock": "video types",
+        "visual": "visual control",
+        "bracket": "visual control",
+        "image instruction": "visual control",
+        "control": "visual control",
+        "custom visual": "visual control",
     };
     for (const [term, key] of Object.entries(termMap)) {
         if (lower.includes(term))

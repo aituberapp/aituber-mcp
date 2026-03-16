@@ -66,6 +66,12 @@ All types support voice selection, captions, aspect ratio, and other common sett
 
   "character": `Character template creates story-driven videos with consistent AI characters throughout. Set templateId: "character" in POST /videos/generate. Important: character template only works with inputType: "idea" (the AI writes the script to maintain character consistency). You provide a topic, not a full script. Example: { "script": "A detective solves a mystery in Tokyo", "templateId": "character", "inputType": "idea", "expectedDurationSeconds": 60 }`,
 
+  "visual control": `By default, AITuber's AI automatically decides what visuals to show for each part of your narration. For more control, add visual instructions in brackets before each narration segment:
+
+"[A dark forest at night] The wind howled through the trees. [Glowing eyes in the darkness] Something was watching from the shadows."
+
+Each [bracketed text] tells the AI exactly what to show for that scene. The text after it is the voiceover. This works in script mode with any media type (images, video, stock). No special flag needed.`,
+
   "templates": `AITuber has 2 video templates that create specialized video formats:
 - **skeleton** - X-ray/skeleton style viral videos ("what happens if..." format)
 - **character** - Character-driven story videos with consistent characters
@@ -123,7 +129,7 @@ const ENDPOINTS: Endpoint[] = [
         type: "string",
         required: true,
         description:
-          "The narration text (script mode) or topic description (idea mode)",
+          'The narration text (script mode) or topic description (idea mode). For more visual control in script mode, add instructions in brackets: "[A dark forest] The wind howled. [Glowing eyes] Something watched." Each [bracket] tells the AI what to show.',
       },
       {
         name: "inputType",
@@ -239,6 +245,11 @@ const ENDPOINTS: Endpoint[] = [
         inputType: "idea",
         expectedDurationSeconds: 90,
       },
+      "Script with visual control": {
+        script: "[A dark forest at night] The wind howled through the ancient trees. [Glowing eyes peering from the shadows] Deep in the darkness, something was watching. [A figure running through moonlight] She had to escape before it was too late.",
+        voiceId: "EXAVITQu4vr4xnSDxMaL",
+        imageStyleId: "cinematic",
+      },
     },
   },
   {
@@ -351,6 +362,11 @@ function searchKnowledge(query: string): string | null {
     "media type": "video types",
     "faceless": "video types",
     "stock": "video types",
+    "visual": "visual control",
+    "bracket": "visual control",
+    "image instruction": "visual control",
+    "control": "visual control",
+    "custom visual": "visual control",
   };
   for (const [term, key] of Object.entries(termMap)) {
     if (lower.includes(term)) return KNOWLEDGE[key] ?? null;
