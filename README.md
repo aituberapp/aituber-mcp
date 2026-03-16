@@ -44,11 +44,26 @@ Go to [app.aituber.app/dashboard/settings](https://app.aituber.app/dashboard/api
 **Claude Code:**
 
 ```bash
-claude mcp add aituber -- npx -y @aituber/mcp-server
-export AITUBER_API_KEY=your_api_key_here
+claude mcp add aituber -e AITUBER_API_KEY=your_api_key_here -- npx -y @aituber/mcp-server
 ```
 
-**Cursor, Windsurf, and other MCP clients** - follow the same pattern. Point the MCP server command to `npx -y @aituber/mcp-server` and set the `AITUBER_API_KEY` environment variable.
+**Cursor** - add to `.cursor/mcp.json` in your project:
+
+```json
+{
+  "mcpServers": {
+    "aituber": {
+      "command": "npx",
+      "args": ["-y", "@aituber/mcp-server"],
+      "env": {
+        "AITUBER_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+**Windsurf and other MCP clients** - same pattern. Point the MCP server command to `npx -y @aituber/mcp-server` and set the `AITUBER_API_KEY` environment variable in the config.
 
 ### 3. Start creating
 
