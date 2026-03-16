@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -6,6 +7,8 @@ import { z } from "zod";
 // ---------------------------------------------------------------------------
 const API_KEY = process.env.AITUBER_API_KEY;
 const BASE_URL = process.env.AITUBER_API_BASE_URL ?? "https://app.aituber.app/api/v1";
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_RESPONSE_LENGTH = 50_000;
 if (!API_KEY) {
     console.error("AITUBER_API_KEY is required. Get your key at https://app.aituber.app/dashboard/settings");
     process.exit(1);
@@ -170,7 +173,7 @@ const ENDPOINTS = [
         method: "GET",
         path: "/subscription",
         summary: "Check plan and credit balance",
-        description: "Returns your current plan name, credit balance, monthly credit allowance, billing interval, and when credits reset.",
+        description: "Returns your current plan name, credit balance, monthly credit allowance, billing interval, and when credits reset. To upgrade your plan or purchase additional credits, go to https://app.aituber.app/dashboard/billing",
         params: [],
         auth: true,
         example: "GET /subscription",
@@ -219,9 +222,7 @@ const ENDPOINTS = [
 // Search logic
 // ---------------------------------------------------------------------------
 function searchEndpoints(query) {
-    const q = query.toLowerCase();
-    const terms = q.split(/\s+/).filter(Boolean);
-    // Score each endpoint by how many terms match
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
     const scored = ENDPOINTS.map((ep) => {
         const searchable = [
             ep.method,
@@ -239,7 +240,6 @@ function searchEndpoints(query) {
         }
         return { ep, score };
     });
-    // Return endpoints that match at least one term, sorted by score
     return scored
         .filter((s) => s.score > 0)
         .sort((a, b) => b.score - a.score)
@@ -252,14 +252,10 @@ function formatEndpoint(ep) {
     lines.push("");
     lines.push(ep.description);
     lines.push("");
-    if (ep.auth) {
-        lines.push("**Authentication:** Required (Bearer token)");
-        lines.push("");
-    }
-    else {
-        lines.push("**Authentication:** Not required");
-        lines.push("");
-    }
+    lines.push(ep.auth
+        ? "**Authentication:** Required (Bearer token)"
+        : "**Authentication:** Not required");
+    lines.push("");
     if (ep.params.length > 0) {
         lines.push("**Parameters:**");
         for (const p of ep.params) {
@@ -283,7 +279,6 @@ function formatEndpoint(ep) {
 // HTTP client
 // ---------------------------------------------------------------------------
 async function apiRequest(method, path, options) {
-    // Substitute path parameters
     let resolvedPath = path;
     if (options?.pathParams) {
         for (const [key, value] of Object.entries(options.pathParams)) {
@@ -301,7 +296,6 @@ async function apiRequest(method, path, options) {
     const headers = {
         "Content-Type": "application/json",
     };
-    // Add auth for all endpoints except voices
     if (resolvedPath !== "/voices") {
         headers["Authorization"] = `Bearer ${API_KEY}`;
     }
@@ -309,6 +303,7 @@ async function apiRequest(method, path, options) {
         method,
         headers,
         body: options?.body ? JSON.stringify(options.body) : undefined,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     const responseBody = await response.text();
     return {
@@ -325,14 +320,13 @@ const server = new McpServer({
     version: "1.0.0",
 });
 // Tool 1: Search the API
-server.tool("search_api", "Search the AITuber API to find endpoints for creating AI videos, checking credits, exporting to MP4, and more. Returns matching endpoints with parameters and examples. Use this before execute_api to find the right endpoint and understand its parameters.", {
+server.tool("search_api", "Search the AITuber API to find endpoints for creating AI videos, checking credits, exporting to MP4, and more. Returns matching endpoints with parameters and examples. Use this before execute_api to find the right endpoint.", {
     query: z
         .string()
         .describe('What you want to do, e.g. "create a video", "list voices", "check credits", "download mp4", "export video"'),
 }, async ({ query }) => {
     const results = searchEndpoints(query);
     if (results.length === 0) {
-        // Return all endpoints as a fallback
         const allEndpoints = ENDPOINTS.map((ep) => `- ${ep.method} ${ep.path}: ${ep.summary}`).join("\n");
         return {
             content: [
@@ -362,25 +356,24 @@ server.tool("execute_api", "Execute a request against the AITuber API. Use searc
         .string()
         .describe("API endpoint path, e.g. /videos, /videos/generate, /voices, /subscription"),
     query: z
-        .record(z.string())
+        .record(z.string(), z.string())
         .optional()
         .describe('Query parameters as key-value pairs, e.g. { "limit": "10", "gender": "female" }'),
     body: z
-        .record(z.unknown())
+        .record(z.string(), z.unknown())
         .optional()
         .describe('Request body (for POST/PUT), e.g. { "script": "...", "mediaType": "images" }'),
     pathParams: z
-        .record(z.string())
+        .record(z.string(), z.string())
         .optional()
         .describe('Path parameter substitutions, e.g. { "id": "abc-123" } for /videos/{id}'),
 }, async ({ method, path, query, body, pathParams }) => {
     try {
         const result = await apiRequest(method, path, {
-            query,
+            query: query,
             body,
-            pathParams,
+            pathParams: pathParams,
         });
-        // Try to pretty-print JSON responses
         let formattedBody = result.body;
         try {
             const parsed = JSON.parse(result.body);
@@ -389,7 +382,12 @@ server.tool("execute_api", "Execute a request against the AITuber API. Use searc
         catch {
             // Not JSON, use raw body
         }
-        const isError = result.status >= 400;
+        // Truncate very large responses to avoid overwhelming the LLM context
+        if (formattedBody.length > MAX_RESPONSE_LENGTH) {
+            formattedBody =
+                formattedBody.substring(0, MAX_RESPONSE_LENGTH) +
+                    "\n\n... (response truncated. Use query filters to narrow results)";
+        }
         return {
             content: [
                 {
@@ -397,15 +395,19 @@ server.tool("execute_api", "Execute a request against the AITuber API. Use searc
                     text: `${result.status} ${result.statusText}\n\n${formattedBody}`,
                 },
             ],
-            isError,
+            isError: result.status >= 400,
         };
     }
     catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const isTimeout = message.includes("abort") || message.includes("timeout");
         return {
             content: [
                 {
                     type: "text",
-                    text: `Request failed: ${error instanceof Error ? error.message : String(error)}`,
+                    text: isTimeout
+                        ? `Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. The API may be under heavy load. Try again.`
+                        : `Request failed: ${message}`,
                 },
             ],
             isError: true,

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -9,6 +10,8 @@ import { z } from "zod";
 const API_KEY = process.env.AITUBER_API_KEY;
 const BASE_URL =
   process.env.AITUBER_API_BASE_URL ?? "https://app.aituber.app/api/v1";
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_RESPONSE_LENGTH = 50_000;
 
 if (!API_KEY) {
   console.error(
@@ -109,13 +112,15 @@ const ENDPOINTS: Endpoint[] = [
         name: "voiceId",
         in: "body",
         type: "string",
-        description: "Voice ID from GET /voices. Default: Adam (deep American male).",
+        description:
+          "Voice ID from GET /voices. Default: Adam (deep American male).",
       },
       {
         name: "voiceSpeed",
         in: "body",
         type: "number",
-        description: "Narration speed: 0.7 (slower) to 1.2 (faster). Default: 1.0.",
+        description:
+          "Narration speed: 0.7 (slower) to 1.2 (faster). Default: 1.0.",
       },
       {
         name: "aspectRatio",
@@ -142,7 +147,8 @@ const ENDPOINTS: Endpoint[] = [
         name: "title",
         in: "body",
         type: "string",
-        description: "Custom video title (max 80 chars). Auto-generated if omitted.",
+        description:
+          "Custom video title (max 80 chars). Auto-generated if omitted.",
       },
       {
         name: "expectedDurationSeconds",
@@ -213,7 +219,7 @@ const ENDPOINTS: Endpoint[] = [
     path: "/subscription",
     summary: "Check plan and credit balance",
     description:
-      "Returns your current plan name, credit balance, monthly credit allowance, billing interval, and when credits reset.",
+      "Returns your current plan name, credit balance, monthly credit allowance, billing interval, and when credits reset. To upgrade your plan or purchase additional credits, go to https://app.aituber.app/dashboard/billing",
     params: [],
     auth: true,
     example: "GET /subscription",
@@ -253,7 +259,8 @@ const ENDPOINTS: Endpoint[] = [
         name: "videoId",
         in: "query",
         type: "string",
-        description: "Video ID. Finds the latest completed export automatically.",
+        description:
+          "Video ID. Finds the latest completed export automatically.",
       },
     ],
     auth: true,
@@ -266,10 +273,8 @@ const ENDPOINTS: Endpoint[] = [
 // ---------------------------------------------------------------------------
 
 function searchEndpoints(query: string): Endpoint[] {
-  const q = query.toLowerCase();
-  const terms = q.split(/\s+/).filter(Boolean);
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
 
-  // Score each endpoint by how many terms match
   const scored = ENDPOINTS.map((ep) => {
     const searchable = [
       ep.method,
@@ -288,7 +293,6 @@ function searchEndpoints(query: string): Endpoint[] {
     return { ep, score };
   });
 
-  // Return endpoints that match at least one term, sorted by score
   return scored
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -302,20 +306,20 @@ function formatEndpoint(ep: Endpoint): string {
   lines.push("");
   lines.push(ep.description);
   lines.push("");
-
-  if (ep.auth) {
-    lines.push("**Authentication:** Required (Bearer token)");
-    lines.push("");
-  } else {
-    lines.push("**Authentication:** Not required");
-    lines.push("");
-  }
+  lines.push(
+    ep.auth
+      ? "**Authentication:** Required (Bearer token)"
+      : "**Authentication:** Not required"
+  );
+  lines.push("");
 
   if (ep.params.length > 0) {
     lines.push("**Parameters:**");
     for (const p of ep.params) {
       const req = p.required ? " (required)" : "";
-      lines.push(`- \`${p.name}\` (${p.type}, ${p.in}${req}): ${p.description}`);
+      lines.push(
+        `- \`${p.name}\` (${p.type}, ${p.in}${req}): ${p.description}`
+      );
     }
     lines.push("");
   }
@@ -345,7 +349,6 @@ async function apiRequest(
     pathParams?: Record<string, string>;
   }
 ): Promise<{ status: number; statusText: string; body: string }> {
-  // Substitute path parameters
   let resolvedPath = path;
   if (options?.pathParams) {
     for (const [key, value] of Object.entries(options.pathParams)) {
@@ -370,7 +373,6 @@ async function apiRequest(
     "Content-Type": "application/json",
   };
 
-  // Add auth for all endpoints except voices
   if (resolvedPath !== "/voices") {
     headers["Authorization"] = `Bearer ${API_KEY}`;
   }
@@ -379,6 +381,7 @@ async function apiRequest(
     method,
     headers,
     body: options?.body ? JSON.stringify(options.body) : undefined,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   const responseBody = await response.text();
@@ -401,7 +404,7 @@ const server = new McpServer({
 // Tool 1: Search the API
 server.tool(
   "search_api",
-  "Search the AITuber API to find endpoints for creating AI videos, checking credits, exporting to MP4, and more. Returns matching endpoints with parameters and examples. Use this before execute_api to find the right endpoint and understand its parameters.",
+  "Search the AITuber API to find endpoints for creating AI videos, checking credits, exporting to MP4, and more. Returns matching endpoints with parameters and examples. Use this before execute_api to find the right endpoint.",
   {
     query: z
       .string()
@@ -413,7 +416,6 @@ server.tool(
     const results = searchEndpoints(query);
 
     if (results.length === 0) {
-      // Return all endpoints as a fallback
       const allEndpoints = ENDPOINTS.map(
         (ep) => `- ${ep.method} ${ep.path}: ${ep.summary}`
       ).join("\n");
@@ -421,7 +423,7 @@ server.tool(
       return {
         content: [
           {
-            type: "text",
+            type: "text" as const,
             text: `No endpoints matched "${query}". Here are all available endpoints:\n\n${allEndpoints}\n\nTry searching with different terms.`,
           },
         ],
@@ -433,7 +435,7 @@ server.tool(
     return {
       content: [
         {
-          type: "text",
+          type: "text" as const,
           text: `Found ${results.length} matching endpoint${results.length > 1 ? "s" : ""}:\n\n${formatted}`,
         },
       ],
@@ -455,19 +457,19 @@ server.tool(
         "API endpoint path, e.g. /videos, /videos/generate, /voices, /subscription"
       ),
     query: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .optional()
       .describe(
         'Query parameters as key-value pairs, e.g. { "limit": "10", "gender": "female" }'
       ),
     body: z
-      .record(z.unknown())
+      .record(z.string(), z.unknown())
       .optional()
       .describe(
         'Request body (for POST/PUT), e.g. { "script": "...", "mediaType": "images" }'
       ),
     pathParams: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .optional()
       .describe(
         'Path parameter substitutions, e.g. { "id": "abc-123" } for /videos/{id}'
@@ -476,12 +478,11 @@ server.tool(
   async ({ method, path, query, body, pathParams }) => {
     try {
       const result = await apiRequest(method, path, {
-        query,
+        query: query as Record<string, string> | undefined,
         body,
-        pathParams,
+        pathParams: pathParams as Record<string, string> | undefined,
       });
 
-      // Try to pretty-print JSON responses
       let formattedBody = result.body;
       try {
         const parsed = JSON.parse(result.body);
@@ -490,23 +491,34 @@ server.tool(
         // Not JSON, use raw body
       }
 
-      const isError = result.status >= 400;
+      // Truncate very large responses to avoid overwhelming the LLM context
+      if (formattedBody.length > MAX_RESPONSE_LENGTH) {
+        formattedBody =
+          formattedBody.substring(0, MAX_RESPONSE_LENGTH) +
+          "\n\n... (response truncated. Use query filters to narrow results)";
+      }
 
       return {
         content: [
           {
-            type: "text",
+            type: "text" as const,
             text: `${result.status} ${result.statusText}\n\n${formattedBody}`,
           },
         ],
-        isError,
+        isError: result.status >= 400,
       };
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+      const isTimeout = message.includes("abort") || message.includes("timeout");
+
       return {
         content: [
           {
-            type: "text",
-            text: `Request failed: ${error instanceof Error ? error.message : String(error)}`,
+            type: "text" as const,
+            text: isTimeout
+              ? `Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. The API may be under heavy load. Try again.`
+              : `Request failed: ${message}`,
           },
         ],
         isError: true,
