@@ -10,9 +10,39 @@ const BASE_URL = process.env.AITUBER_API_BASE_URL ?? "https://app.aituber.app/ap
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_RESPONSE_LENGTH = 50_000;
 if (!API_KEY) {
-    console.error("AITUBER_API_KEY is required. Get your key at https://app.aituber.app/dashboard/settings");
+    console.error("AITUBER_API_KEY is required. Get your key at https://app.aituber.app/dashboard/api-keys");
     process.exit(1);
 }
+// ---------------------------------------------------------------------------
+// Knowledge base (helps the search tool answer conceptual questions)
+// ---------------------------------------------------------------------------
+const KNOWLEDGE = {
+    "video types": `AITuber supports 5 video types, all created via POST /videos/generate:
+
+1. **Faceless Narration (images)** - Default. AI generates unique images for each segment with smooth Ken Burns animation. The classic "faceless video" style used by top YouTube channels. Set mediaType: "images" (or omit, it's the default).
+
+2. **Faceless Narration (video clips)** - AI generates short video clips instead of images. More dynamic, higher credit cost. Set mediaType: "video".
+
+3. **Stock Footage** - Automatically finds and matches real stock footage to narration. Great for news, educational, documentary content. Set mediaType: "stock".
+
+4. **Skeleton Template** - Viral "what happens if..." X-ray style videos. Uses a specialized AI model for skeleton/X-ray visuals. Set templateId: "skeleton". The template handles mediaType and style automatically.
+
+5. **Character Template** - Character-driven story format with consistent characters throughout. Set templateId: "character". Only supports inputType: "idea" (AI writes the script). The template handles mediaType and style automatically.
+
+All types support voice selection, captions, aspect ratio, and other common settings.`,
+    "skeleton": `Skeleton videos are a viral video format where subjects are shown in X-ray/skeleton style. Created by setting templateId: "skeleton" in POST /videos/generate. The template automatically selects the right AI model and visual style. IMPORTANT: Do NOT send mediaType, imageStyleId, or imageQuality when using this template. The template handles all visual settings. Just send script + templateId. Example: { "script": "What happens if you eat 100 bananas", "templateId": "skeleton" }`,
+    "character": `Character template creates story-driven videos with consistent AI characters throughout. Set templateId: "character" in POST /videos/generate. Important: character template only works with inputType: "idea" (the AI writes the script to maintain character consistency). You provide a topic, not a full script. IMPORTANT: Do NOT send mediaType, imageStyleId, or imageQuality when using this template. The template handles all visual settings. Example: { "script": "A detective solves a mystery in Tokyo", "templateId": "character", "inputType": "idea", "expectedDurationSeconds": 60 }`,
+    "visual control": `By default, AITuber's AI automatically decides what visuals to show for each part of your narration. For more control, add visual instructions in brackets before each narration segment:
+
+"[A dark forest at night] The wind howled through the trees. [Glowing eyes in the darkness] Something was watching from the shadows."
+
+Each [bracketed text] tells the AI exactly what to show for that scene. The text after it is the voiceover. This works in script mode with any media type (images, video, stock). No special flag needed.`,
+    "templates": `AITuber has 2 video templates that create specialized video formats:
+- **skeleton** - X-ray/skeleton style viral videos ("what happens if..." format)
+- **character** - Character-driven story videos with consistent characters
+
+Set templateId in POST /videos/generate. Templates override mediaType and imageStyleId automatically. For regular faceless narration videos, don't set templateId.`,
+};
 const ENDPOINTS = [
     {
         method: "GET",
@@ -59,7 +89,7 @@ const ENDPOINTS = [
                 in: "body",
                 type: "string",
                 required: true,
-                description: "The narration text (script mode) or topic description (idea mode)",
+                description: 'The narration text (script mode) or topic description (idea mode). For more visual control in script mode, add instructions in brackets: "[A dark forest] The wind howled. [Glowing eyes] Something watched." Each [bracket] tells the AI what to show.',
             },
             {
                 name: "inputType",
@@ -104,22 +134,16 @@ const ENDPOINTS = [
                 description: 'Visual art style: "photorealistic" (default), "cinematic", "anime", "3d-pixar", "watercolor", "comic-book", "oil-painting", "pencil-sketch", etc.',
             },
             {
-                name: "title",
-                in: "body",
-                type: "string",
-                description: "Custom video title (max 80 chars). Auto-generated if omitted.",
-            },
-            {
                 name: "expectedDurationSeconds",
                 in: "body",
                 type: "number",
-                description: "Target video duration in seconds. Required when inputType is idea. E.g., 60 for 1-minute video.",
+                description: "Target video duration in seconds (15-420). Required when inputType is idea. E.g., 60 for 1-minute, 180 for 3-minute, 420 for 7-minute video.",
             },
             {
                 name: "captionStyleId",
                 in: "body",
                 type: "string",
-                description: 'Caption style: "wrap-1" (default, MrBeast-style), "classic", "karaoke", "box", "minimal", "handwritten", "neon".',
+                description: 'Caption style: "wrap-1" (default, word highlight with 2-word groups), "hormozi" (bold uppercase yellow highlight), "classic" (white text, black outline), "karaoke" (words pop in one by one), "box" (single word in solid box), "minimal" (subtle highlight), "handwritten" (handwritten font), "neon" (glowing neon text).',
             },
             {
                 name: "captionsEnabled",
@@ -127,13 +151,53 @@ const ENDPOINTS = [
                 type: "boolean",
                 description: "Show captions. Default: true. Recommended for engagement.",
             },
+            {
+                name: "captionPosition",
+                in: "body",
+                type: "string",
+                description: 'Where to position captions on the video. "bottom" (default), "center", or "top".',
+            },
+            {
+                name: "templateId",
+                in: "body",
+                type: "string",
+                description: 'Specialized video template. "skeleton": viral X-ray/skeleton style ("what happens if..." format). "character": character-driven story (requires inputType "idea"). Leave empty for standard faceless narration videos. IMPORTANT: When using a template, do NOT send mediaType, imageStyleId, or imageQuality. The template handles these automatically.',
+            },
+            {
+                name: "videoQuality",
+                in: "body",
+                type: "string",
+                description: 'For video mediaType only. "basic": fastest, lower quality. "good" (default): balanced. "premium": highest quality, slower.',
+            },
         ],
         auth: true,
-        example: {
-            script: "5 mind-blowing facts about black holes",
-            inputType: "idea",
-            expectedDurationSeconds: 60,
-            imageStyleId: "cinematic",
+        examples: {
+            "Idea to Video (faceless)": {
+                script: "5 mind-blowing facts about black holes",
+                inputType: "idea",
+                expectedDurationSeconds: 60,
+                imageStyleId: "cinematic",
+            },
+            "Script to Video (video clips)": {
+                script: "The ocean covers over 70 percent of Earth's surface. Beneath the waves lies a world few have ever seen.",
+                mediaType: "video",
+                voiceId: "CwhRBWXzGAHq8TQ4Fs17",
+            },
+            "Skeleton template": {
+                script: "What happens if you eat 100 bananas in one day",
+                templateId: "skeleton",
+            },
+            "Character template": {
+                script: "A detective solves a mystery in a haunted mansion",
+                templateId: "character",
+                inputType: "idea",
+                expectedDurationSeconds: 90,
+            },
+            "Script with visual control": {
+                script: "[A dark forest at night] The wind howled through the ancient trees. [Glowing eyes peering from the shadows] Deep in the darkness, something was watching. [A figure running through moonlight] She had to escape before it was too late.",
+                voiceId: "EXAVITQu4vr4xnSDxMaL",
+                imageStyleId: "cinematic",
+            },
         },
     },
     {
@@ -221,6 +285,36 @@ const ENDPOINTS = [
 // ---------------------------------------------------------------------------
 // Search logic
 // ---------------------------------------------------------------------------
+function searchKnowledge(query) {
+    const lower = query.toLowerCase();
+    for (const [key, value] of Object.entries(KNOWLEDGE)) {
+        if (lower.includes(key))
+            return value;
+    }
+    // Check for related terms
+    const termMap = {
+        "skeleton": "skeleton",
+        "x-ray": "skeleton",
+        "xray": "skeleton",
+        "character": "character",
+        "story": "character",
+        "template": "templates",
+        "video type": "video types",
+        "media type": "video types",
+        "faceless": "video types",
+        "stock": "video types",
+        "visual": "visual control",
+        "bracket": "visual control",
+        "image instruction": "visual control",
+        "control": "visual control",
+        "custom visual": "visual control",
+    };
+    for (const [term, key] of Object.entries(termMap)) {
+        if (lower.includes(term))
+            return KNOWLEDGE[key] ?? null;
+    }
+    return null;
+}
 function searchEndpoints(query) {
     const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
     const scored = ENDPOINTS.map((ep) => {
@@ -264,14 +358,25 @@ function formatEndpoint(ep) {
         }
         lines.push("");
     }
-    lines.push("**Example:**");
-    if (typeof ep.example === "string") {
-        lines.push(`\`${ep.example}\``);
+    if (ep.examples) {
+        lines.push("**Examples:**");
+        for (const [label, body] of Object.entries(ep.examples)) {
+            lines.push(`\n*${label}:*`);
+            lines.push("```json");
+            lines.push(JSON.stringify(body, null, 2));
+            lines.push("```");
+        }
     }
-    else {
-        lines.push("```json");
-        lines.push(JSON.stringify(ep.example, null, 2));
-        lines.push("```");
+    else if (ep.example) {
+        lines.push("**Example:**");
+        if (typeof ep.example === "string") {
+            lines.push(`\`${ep.example}\``);
+        }
+        else {
+            lines.push("```json");
+            lines.push(JSON.stringify(ep.example, null, 2));
+            lines.push("```");
+        }
     }
     return lines.join("\n");
 }
@@ -325,8 +430,17 @@ server.tool("search_api", "Search the AITuber API to find endpoints for creating
         .string()
         .describe('What you want to do, e.g. "create a video", "list voices", "check credits", "download mp4", "export video"'),
 }, async ({ query }) => {
+    const knowledge = searchKnowledge(query);
     const results = searchEndpoints(query);
-    if (results.length === 0) {
+    const parts = [];
+    if (knowledge) {
+        parts.push(knowledge);
+    }
+    if (results.length > 0) {
+        const formatted = results.map(formatEndpoint).join("\n\n---\n\n");
+        parts.push(formatted);
+    }
+    if (parts.length === 0) {
         const allEndpoints = ENDPOINTS.map((ep) => `- ${ep.method} ${ep.path}: ${ep.summary}`).join("\n");
         return {
             content: [
@@ -337,12 +451,11 @@ server.tool("search_api", "Search the AITuber API to find endpoints for creating
             ],
         };
     }
-    const formatted = results.map(formatEndpoint).join("\n\n---\n\n");
     return {
         content: [
             {
                 type: "text",
-                text: `Found ${results.length} matching endpoint${results.length > 1 ? "s" : ""}:\n\n${formatted}`,
+                text: parts.join("\n\n---\n\n") + "\n\n**Full API docs:** https://app.aituber.app/api-docs",
             },
         ],
     };
