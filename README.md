@@ -12,7 +12,7 @@ Create AI-powered videos from any MCP-compatible client. Generate videos with AI
 - **27+ visual styles** - photorealistic, anime, cinematic, 3D Pixar, watercolor, comic book, and more
 - **Video templates** - skeleton X-ray style, character-driven stories
 - **Multiple media types** - AI-generated images, AI video clips, or real stock footage
-- **YouTube, TikTok, Instagram** - publish directly to your connected channels (coming soon to API)
+- **YouTube, TikTok, Instagram** - publish directly to your connected channels
 - **Autopilot mode** - schedule automated video creation on a recurring basis (via dashboard)
 - **Export to MP4** - render and download the final video
 - **Check credits and plan** - monitor usage before generating
@@ -77,6 +77,8 @@ Ask your AI assistant:
 
 > "Export my latest video to MP4 and give me the download link"
 
+> "List my connected channels and publish my finished video to TikTok and Instagram"
+
 ## How it works
 
 This MCP server provides two tools:
@@ -103,13 +105,25 @@ execute_api(method: "POST", path: "/videos/generate", body: {
 -> Returns: { videoId: "abc-123", status: "pending" }
 ```
 
-### Example workflow
+### Example workflows
+
+**Generate and download MP4**
 
 1. **Search** - find the right endpoint for creating a video
 2. **Generate** - create the video with your script and settings
 3. **Poll** - check video status until generation completes
 4. **Export** - render the completed video to MP4
 5. **Download** - get the MP4 download URL
+
+**Generate and publish**
+
+1. **Generate** - create the video with your script and settings
+2. **Poll** - wait until the video status is `completed`
+3. **List channels** - call `GET /channels` to find connected channel IDs
+4. **Publish** - call `POST /publications` with the `videoId` and per-channel settings
+5. **Poll publication** - call `GET /publications/{publicationId}` until it reaches `published`, `scheduled`, or `failed`
+
+Publishing requires channels to already be connected through the AITuber dashboard and an active paid plan with the Publish feature. If the video is not exported yet, the API starts the export automatically.
 
 ## API endpoints
 
@@ -122,6 +136,9 @@ execute_api(method: "POST", path: "/videos/generate", body: {
 | `GET /subscription` | Check your plan, credits, and billing info |
 | `POST /exports` | Start rendering a video to MP4 |
 | `GET /exports/download` | Get a temporary download URL for the MP4 |
+| `GET /channels` | List connected YouTube, TikTok, and Instagram channels |
+| `POST /publications` | Publish a completed video to one or more connected channels |
+| `GET /publications/{publicationId}` | Check publication status after publishing |
 
 ## Supported video types
 

@@ -42,6 +42,22 @@ Each [bracketed text] tells the AI exactly what to show for that scene. The text
 - **character** - Character-driven story videos with consistent characters
 
 Set templateId in POST /videos/generate. Templates override mediaType and imageStyleId automatically. For regular faceless narration videos, don't set templateId.`,
+    "publishing": `Publishing flow for AITuber videos:
+
+1. **Connect a channel** via the AITuber dashboard (OAuth). Supported: YouTube, TikTok, Instagram.
+2. **Generate a video** (POST /videos/generate) and wait until status is "completed".
+3. **List your channels** (GET /channels) to find channel IDs.
+4. **Publish** (POST /publications) with the videoId and per-channel settings.
+5. **Poll status** (GET /publications/{publicationId}) until the upload reaches a stable state.
+
+The API auto-exports the video to MP4 if not already exported. No need to call POST /exports first.
+
+Requires an active paid subscription with the Publish feature (Creator plan or higher). Publishing is free (no credit cost).
+
+Each platform accepts different settings:
+- **YouTube:** title, tags, categoryId, madeForKids
+- **TikTok:** tiktokPrivacyStatus, allowComment, allowDuet, allowStitch
+- **Instagram:** instagramPlacement (reels/stories/timeline), shareToFeed`,
 };
 const ENDPOINTS = [
     {
@@ -281,6 +297,122 @@ const ENDPOINTS = [
         auth: true,
         example: "GET /exports/download?videoId=your-video-id",
     },
+    {
+        method: "GET",
+        path: "/channels",
+        summary: "List connected social media channels",
+        description: "Returns all connected social media channels (YouTube, TikTok, Instagram) for your organization. Channels must be connected via the AITuber dashboard (OAuth). Use channel IDs when calling POST /publications.",
+        params: [
+            {
+                name: "platform",
+                in: "query",
+                type: "string",
+                description: 'Filter by platform: "youtube", "tiktok", "instagram", or "all". Omit for all connected channels.',
+            },
+        ],
+        auth: true,
+        example: "GET /channels?platform=youtube",
+    },
+    {
+        method: "POST",
+        path: "/publications",
+        summary: "Publish a video to social media",
+        description: "Publishes a completed video to one or more connected channels (YouTube, TikTok, Instagram). Auto-exports to MP4 if needed. Each channel gets independent status tracking. Requires a paid subscription with the Publish feature. Free (no credit cost).",
+        params: [
+            {
+                name: "videoId",
+                in: "body",
+                type: "string",
+                required: true,
+                description: 'ID of the completed video to publish (status must be "completed").',
+            },
+            {
+                name: "caption",
+                in: "body",
+                type: "string",
+                description: "Description/caption shared across all platforms. Max 5000 characters.",
+            },
+            {
+                name: "publishNow",
+                in: "body",
+                type: "boolean",
+                description: "true (default) to publish immediately, false to schedule.",
+            },
+            {
+                name: "scheduledAt",
+                in: "body",
+                type: "string",
+                description: "ISO 8601 datetime to schedule publication. Required when publishNow is false.",
+            },
+            {
+                name: "channels",
+                in: "body",
+                type: "array",
+                required: true,
+                description: "Array of channel objects. Each needs channelId (from GET /channels) plus optional platform-specific settings. YouTube: title, tags, categoryId, madeForKids. TikTok: tiktokPrivacyStatus, allowComment, allowDuet, allowStitch. Instagram: instagramPlacement, shareToFeed.",
+            },
+        ],
+        auth: true,
+        examples: {
+            "Publish to YouTube": {
+                videoId: "your-video-id",
+                caption: "Check out this video!",
+                channels: [
+                    {
+                        channelId: "your-channel-id",
+                        title: "5 Mind-Blowing Facts",
+                        tags: ["facts", "science", "education"],
+                        categoryId: "27",
+                    },
+                ],
+            },
+            "Multi-platform publish": {
+                videoId: "your-video-id",
+                caption: "New video just dropped!",
+                channels: [
+                    {
+                        channelId: "youtube-channel-id",
+                        title: "My Video Title",
+                        categoryId: "24",
+                    },
+                    {
+                        channelId: "instagram-channel-id",
+                        instagramPlacement: "reels",
+                    },
+                ],
+            },
+            "Publish to TikTok": {
+                videoId: "your-video-id",
+                caption: "Posting a new TikTok",
+                channels: [
+                    {
+                        channelId: "tiktok-channel-id",
+                        tiktokPrivacyStatus: "public",
+                        allowComment: true,
+                        allowDuet: true,
+                        allowStitch: true,
+                    },
+                ],
+            },
+        },
+    },
+    {
+        method: "GET",
+        path: "/publications/{publicationId}",
+        summary: "Check publication status",
+        description: "Returns the current status of a publication. Poll this after POST /publications until the upload reaches a stable state such as published, scheduled, or failed. Immediate publishes typically move exporting -> uploading -> published. Scheduled publishes may move into scheduled first, depending on platform behavior.",
+        params: [
+            {
+                name: "publicationId",
+                in: "path",
+                type: "string",
+                required: true,
+                description: "Publication ID from POST /publications.",
+            },
+        ],
+        auth: true,
+        example: "GET /publications/{publicationId}",
+    },
 ];
 // ---------------------------------------------------------------------------
 // Search logic
@@ -308,6 +440,15 @@ function searchKnowledge(query) {
         "image instruction": "visual control",
         "control": "visual control",
         "custom visual": "visual control",
+        "publish": "publishing",
+        "channel": "publishing",
+        "channels": "publishing",
+        "youtube": "publishing",
+        "tiktok": "publishing",
+        "instagram": "publishing",
+        "social": "publishing",
+        "schedule": "publishing",
+        "publication": "publishing",
     };
     for (const [term, key] of Object.entries(termMap)) {
         if (lower.includes(term))
