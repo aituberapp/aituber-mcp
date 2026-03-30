@@ -12,7 +12,7 @@ Create AI-powered videos from any MCP-compatible client. Generate videos with AI
 - **27+ visual styles** - photorealistic, anime, cinematic, 3D Pixar, watercolor, comic book, and more
 - **Video templates** - skeleton X-ray style, character-driven stories
 - **Multiple media types** - AI-generated images, AI video clips, or real stock footage
-- **YouTube, TikTok, Instagram** - publish directly to your connected channels
+- **YouTube and Instagram** - publish directly to your connected channels
 - **Autopilot mode** - schedule automated video creation on a recurring basis (via dashboard)
 - **Export to MP4** - render and download the final video
 - **Check credits and plan** - monitor usage before generating
@@ -77,7 +77,7 @@ Ask your AI assistant:
 
 > "Export my latest video to MP4 and give me the download link"
 
-> "List my connected channels and publish my finished video to TikTok and Instagram"
+> "List my connected channels and publish my finished video to YouTube and Instagram"
 
 ## How it works
 
@@ -136,7 +136,7 @@ Publishing requires channels to already be connected through the AITuber dashboa
 | `GET /subscription` | Check your plan, credits, and billing info |
 | `POST /exports` | Start rendering a video to MP4 |
 | `GET /exports/download` | Get a temporary download URL for the MP4 |
-| `GET /channels` | List connected YouTube, TikTok, and Instagram channels |
+| `GET /channels` | List connected YouTube and Instagram channels |
 | `POST /publications` | Publish a completed video to one or more connected channels |
 | `GET /publications/{publicationId}` | Check publication status after publishing |
 

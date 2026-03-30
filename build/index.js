@@ -44,7 +44,7 @@ Each [bracketed text] tells the AI exactly what to show for that scene. The text
 Set templateId in POST /videos/generate. Templates override mediaType and imageStyleId automatically. For regular faceless narration videos, don't set templateId.`,
     "publishing": `Publishing flow for AITuber videos:
 
-1. **Connect a channel** via the AITuber dashboard (OAuth). Supported: YouTube, TikTok, Instagram.
+1. **Connect a channel** via the AITuber dashboard (OAuth). Supported for publishing: YouTube, Instagram.
 2. **Generate a video** (POST /videos/generate) and wait until status is "completed".
 3. **List your channels** (GET /channels) to find channel IDs.
 4. **Publish** (POST /publications) with the videoId and per-channel settings.
@@ -56,7 +56,6 @@ Requires an active paid subscription with the Publish feature (Creator plan or h
 
 Each platform accepts different settings:
 - **YouTube:** title, tags, categoryId, madeForKids
-- **TikTok:** tiktokPrivacyStatus, allowComment, allowDuet, allowStitch
 - **Instagram:** instagramPlacement (reels/stories/timeline), shareToFeed`,
 };
 const ENDPOINTS = [
@@ -301,13 +300,13 @@ const ENDPOINTS = [
         method: "GET",
         path: "/channels",
         summary: "List connected social media channels",
-        description: "Returns all connected social media channels (YouTube, TikTok, Instagram) for your organization. Channels must be connected via the AITuber dashboard (OAuth). Use channel IDs when calling POST /publications.",
+        description: "Returns all connected social media channels documented for public publishing (YouTube, Instagram) for your organization. Channels must be connected via the AITuber dashboard (OAuth). Use channel IDs when calling POST /publications.",
         params: [
             {
                 name: "platform",
                 in: "query",
                 type: "string",
-                description: 'Filter by platform: "youtube", "tiktok", "instagram", or "all". Omit for all connected channels.',
+                description: 'Filter by platform: "youtube", "instagram", or "all". Omit for all connected channels.',
             },
         ],
         auth: true,
@@ -317,7 +316,7 @@ const ENDPOINTS = [
         method: "POST",
         path: "/publications",
         summary: "Publish a video to social media",
-        description: "Publishes a completed video to one or more connected channels (YouTube, TikTok, Instagram). Auto-exports to MP4 if needed. Each channel gets independent status tracking. Requires a paid subscription with the Publish feature. Free (no credit cost).",
+        description: "Publishes a completed video to one or more connected channels (YouTube, Instagram). Auto-exports to MP4 if needed. Each channel gets independent status tracking. Requires a paid subscription with the Publish feature. Free (no credit cost).",
         params: [
             {
                 name: "videoId",
@@ -349,7 +348,7 @@ const ENDPOINTS = [
                 in: "body",
                 type: "array",
                 required: true,
-                description: "Array of channel objects. Each needs channelId (from GET /channels) plus optional platform-specific settings. YouTube: title, tags, categoryId, madeForKids. TikTok: tiktokPrivacyStatus, allowComment, allowDuet, allowStitch. Instagram: instagramPlacement, shareToFeed.",
+                description: "Array of channel objects. Each needs channelId (from GET /channels) plus optional platform-specific settings. YouTube: title, tags, categoryId, madeForKids. Instagram: instagramPlacement, shareToFeed.",
             },
         ],
         auth: true,
@@ -378,19 +377,6 @@ const ENDPOINTS = [
                     {
                         channelId: "instagram-channel-id",
                         instagramPlacement: "reels",
-                    },
-                ],
-            },
-            "Publish to TikTok": {
-                videoId: "your-video-id",
-                caption: "Posting a new TikTok",
-                channels: [
-                    {
-                        channelId: "tiktok-channel-id",
-                        tiktokPrivacyStatus: "public",
-                        allowComment: true,
-                        allowDuet: true,
-                        allowStitch: true,
                     },
                 ],
             },
@@ -444,7 +430,6 @@ function searchKnowledge(query) {
         "channel": "publishing",
         "channels": "publishing",
         "youtube": "publishing",
-        "tiktok": "publishing",
         "instagram": "publishing",
         "social": "publishing",
         "schedule": "publishing",
