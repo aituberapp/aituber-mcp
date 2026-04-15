@@ -201,7 +201,7 @@ const ENDPOINTS: Endpoint[] = [
         in: "body",
         type: "number",
         description:
-          "Target video duration in seconds (15-420). Required when inputType is idea. E.g., 60 for 1-minute, 180 for 3-minute, 420 for 7-minute video.",
+          "Target video duration in seconds (15-1200). Required when inputType is idea. E.g., 60 for 1-minute, 180 for 3-minute, 600 for 10-minute, 1200 for 20-minute video. Max is 1200 (20 min) for the default faceless template; when templateId is 'skeleton' or 'character', the cap is 420 (7 min) because those templates are not designed for long-form content.",
       },
       {
         name: "captionStyleId",

@@ -7,7 +7,7 @@ Create AI-powered videos from any MCP-compatible client. Generate videos with AI
 ## What you can do
 
 - **Generate videos from a prompt or script** - describe a topic and get a fully produced video, or provide exact narration text for precise control
-- **Short-form and long-form** - create 15-second Shorts or 7-minute videos
+- **Short-form and long-form** - create 15-second Shorts or 20-minute videos
 - **1,300+ AI voices** - filter by gender, accent, age, or language
 - **27+ visual styles** - photorealistic, anime, cinematic, 3D Pixar, watercolor, comic book, and more
 - **Video templates** - skeleton X-ray style, character-driven stories
