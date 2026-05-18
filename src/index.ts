@@ -187,7 +187,7 @@ const ENDPOINTS: Endpoint[] = [
         in: "body",
         type: "string",
         description:
-          'For images mediaType. "basic" (1 credit/image), "good" (3), "premium" (9), "max" (45).',
+          'For images mediaType. "basic" (1 credit/image), "good" (6), "premium" (16), "max" (30).',
       },
       {
         name: "imageStyleId",
