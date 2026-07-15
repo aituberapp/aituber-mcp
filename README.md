@@ -4,6 +4,50 @@ Create AI-powered videos from any MCP-compatible client. Generate videos with AI
 
 [AITuber](https://aituber.app) | [API Documentation](https://app.aituber.app/api-docs) | [Get API Key](https://app.aituber.app/dashboard/api-keys)
 
+## Two ways to connect
+
+### 1. Remote server (recommended)
+
+Connect to the hosted server at `https://mcp.aituber.app`. You sign in with your AITuber account in the browser, so there is no API key to copy or store. This is the easiest way to get started.
+
+**claude.ai and Claude Desktop** - open Settings, go to Connectors, click "Add custom connector", and paste the URL:
+
+```
+https://mcp.aituber.app
+```
+
+**Claude Code:**
+
+```bash
+claude mcp add --transport http aituber https://mcp.aituber.app
+```
+
+**Cursor** - add to `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "aituber": {
+      "url": "https://mcp.aituber.app"
+    }
+  }
+}
+```
+
+**Codex** - add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.aituber]
+url = "https://mcp.aituber.app"
+```
+
+When you first connect, your client opens a browser window to sign in to AITuber and approve access. After that it just works.
+
+### 2. npx with an API key
+
+Run the server locally with `npx` and authenticate with an API key. Use this if you prefer a key over browser sign-in, or need to run fully offline from a hosted server. The rest of this README covers this path.
+
+
 ## What you can do
 
 - **Generate videos from a prompt or script** - describe a topic and get a fully produced video, or provide exact narration text for precise control
@@ -157,6 +201,39 @@ Publishing requires channels to already be connected through the AITuber dashboa
 |----------|----------|---------|-------------|
 | `AITUBER_API_KEY` | Yes | - | Your API key from [AITuber dashboard](https://app.aituber.app/dashboard/api-keys) |
 | `AITUBER_API_BASE_URL` | No | `https://app.aituber.app/api/v1` | API base URL (override for self-hosted or testing) |
+
+## Remote server (Cloudflare Worker)
+
+The remote server at `https://mcp.aituber.app` is a Cloudflare Worker (`src/remote.ts`). It is a thin, stateless proxy: it verifies the caller's Clerk OAuth token, exposes the same `search_api` and `execute_api` tools, and forwards each call to the AITuber API with the caller's own token. There is no storage, no sessions, and no analytics.
+
+**Local dev:**
+
+```bash
+pnpm install
+# Create mcp/.dev.vars (gitignored) with:
+#   CLERK_PUBLISHABLE_KEY="pk_test_..."   (dev key)
+#   AITUBER_API_BASE_URL="https://app.aituber.app/api/v1"
+#   CLERK_SECRET_KEY="sk_test_..."        (dev secret)
+pnpm dev:remote        # runs wrangler dev
+```
+
+Quick checks against a running dev server:
+
+```bash
+curl http://localhost:8787/health                                  # {"ok":true}
+curl http://localhost:8787/.well-known/oauth-protected-resource    # RFC 9728 metadata
+```
+
+**Deploy:**
+
+```bash
+# Set the production Clerk secret once (stored as a Worker secret, never committed):
+pnpm exec wrangler secret put CLERK_SECRET_KEY
+# Set the production pk_live_... key in wrangler.toml [vars] CLERK_PUBLISHABLE_KEY, then:
+pnpm deploy:remote     # runs wrangler deploy
+```
+
+`CLERK_PUBLISHABLE_KEY` and `AITUBER_API_BASE_URL` live in `wrangler.toml` under `[vars]` (public). `CLERK_SECRET_KEY` is a secret. Type-check both entry points with `pnpm typecheck`.
 
 ## Links
 

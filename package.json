@@ -1,6 +1,6 @@
 {
   "name": "@aituber/mcp-server",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "packageManager": "pnpm@9.15.1",
   "pnpm": {
     "overrides": {
@@ -15,8 +15,10 @@
     "aituber-mcp": "./build/index.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x build/index.js",
-    "dev": "tsc --watch"
+    "build": "tsc --noEmit && esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=build/index.js && chmod +x build/index.js",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "dev:remote": "wrangler dev",
+    "deploy:remote": "wrangler deploy"
   },
   "files": [
     "build"
@@ -54,11 +56,17 @@
     "url": "https://github.com/aituberapp/aituber-mcp/issues"
   },
   "dependencies": {
+    "@clerk/backend": "^3.11.5",
+    "@hono/mcp": "^0.3.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "hono": "^4.12.30",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260715.1",
     "@types/node": "^26.1.1",
-    "typescript": "^5.8.0"
+    "esbuild": "^0.28.1",
+    "typescript": "^5.8.0",
+    "wrangler": "^4.111.0"
   }
 }

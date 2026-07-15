@@ -1,0 +1,25 @@
+name = "aituber-remote-mcp"
+main = "src/remote.ts"
+compatibility_date = "2026-07-15"
+
+# @clerk/backend and the MCP SDK reach for a few Node built-ins.
+compatibility_flags = ["nodejs_compat"]
+
+# Inline the package version at build time (read by src/remote.ts).
+[define]
+__PACKAGE_VERSION__ = "\"1.5.0\""
+
+# Serve the remote MCP server from https://mcp.aituber.app
+[[routes]]
+pattern = "mcp.aituber.app"
+custom_domain = true
+
+[vars]
+# Production Clerk publishable key (public by design, safe to commit).
+# Decodes to the frontend API domain clerk.aituber.app.
+CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsuYWl0dWJlci5hcHAk"
+AITUBER_API_BASE_URL = "https://app.aituber.app/api/v1"
+
+# CLERK_SECRET_KEY is a secret, not a var. Set it with:
+#   wrangler secret put CLERK_SECRET_KEY
+# For local dev, put it in mcp/.dev.vars (gitignored).
