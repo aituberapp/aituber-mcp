@@ -1,6 +1,6 @@
 {
   "name": "@aituber/mcp-server",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "packageManager": "pnpm@9.15.1",
   "pnpm": {
     "overrides": {
@@ -8,7 +8,7 @@
       "path-to-regexp": "8.4.0"
     }
   },
-  "description": "MCP server for AITuber - AI video creation tool. Generate videos with AI narration, visuals, and captions for YouTube Shorts, TikTok, Instagram Reels, and long-form content. Supports AI images, video clips, stock footage, and viral templates.",
+  "description": "AITuber MCP server, hosted at https://mcp.aituber.app. Create AI videos with narration, visuals, and captions for YouTube Shorts, TikTok, and Instagram Reels, and publish them, straight from Claude Desktop, Claude Code, ChatGPT, Codex, Cursor, or OpenClaw.",
   "license": "MIT",
   "type": "module",
   "bin": {

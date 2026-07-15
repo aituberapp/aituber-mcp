@@ -73,6 +73,16 @@ function extractBearer(request: Request): string | null {
   return match ? match[1].trim() : null;
 }
 
+/**
+ * Two credentials are accepted, matching how hybrid remote MCPs (GitHub,
+ * Stripe) work:
+ * - OAuth 2.1 access tokens: consumer clients (claude.ai, Claude Desktop,
+ *   Cursor) get these via the connector consent flow.
+ * - AITuber API keys (ak_...): headless setups (VPS, CI, n8n, scripts) pass
+ *   them as `Authorization: Bearer ak_...` - long-lived, no browser dance.
+ * Either way the raw token is forwarded to the API, which enforces
+ * everything again.
+ */
 async function verifyToken(request: Request, env: Env): Promise<VerifiedToken> {
   const rawToken = extractBearer(request);
   if (!rawToken) {
@@ -86,7 +96,7 @@ async function verifyToken(request: Request, env: Env): Promise<VerifiedToken> {
     });
 
     const requestState = await clerk.authenticateRequest(request, {
-      acceptsToken: "oauth_token",
+      acceptsToken: ["oauth_token", "api_key"],
     });
 
     const auth = requestState.toAuth();

@@ -1,28 +1,36 @@
 # AITuber MCP Server
 
-Create AI-powered videos from any MCP-compatible client. Generate videos with AI narration, visuals, and synced captions for YouTube Shorts, TikTok, Instagram Reels, and long-form content. Supports AI-generated images, video clips, stock footage, and viral templates like skeleton and character styles. AITuber handles script writing, voice synthesis, visual generation, and video rendering.
+Create AI-powered videos from your AI assistant. Generate videos with AI narration, visuals, and synced captions for YouTube Shorts, TikTok, Instagram Reels, and long-form content. Supports AI-generated images, video clips, stock footage, and viral templates like skeleton and character styles. AITuber handles script writing, voice synthesis, visual generation, and video rendering.
 
-[AITuber](https://aituber.app) | [API Documentation](https://app.aituber.app/api-docs) | [Get API Key](https://app.aituber.app/dashboard/api-keys)
-
-## Two ways to connect
-
-### 1. Remote server (recommended)
-
-Connect to the hosted server at `https://mcp.aituber.app`. You sign in with your AITuber account in the browser, so there is no API key to copy or store. This is the easiest way to get started.
-
-**claude.ai and Claude Desktop** - open Settings, go to Connectors, click "Add custom connector", and paste the URL:
+One server, one URL:
 
 ```
 https://mcp.aituber.app
 ```
 
-**Claude Code:**
+[AITuber](https://aituber.app) | [Setup Guide](https://aituber.app/mcp) | [API Documentation](https://aituber.app/api)
+
+## Set up your client
+
+### claude.ai and Claude Desktop
+
+Open Settings, go to Connectors, click "Add custom connector", and paste `https://mcp.aituber.app`. A browser window opens to sign in with your AITuber account. Done.
+
+### Claude Code
 
 ```bash
 claude mcp add --transport http aituber https://mcp.aituber.app
 ```
 
-**Cursor** - add to `~/.cursor/mcp.json`:
+Your browser opens once to sign in and approve access.
+
+### ChatGPT
+
+Open Settings, go to Connectors, then Advanced, and turn on Developer mode (required for custom connectors). Add a new connector with the URL `https://mcp.aituber.app` and sign in with your AITuber account.
+
+### Cursor
+
+Add to `~/.cursor/mcp.json`:
 
 ```json
 {
@@ -34,19 +42,44 @@ claude mcp add --transport http aituber https://mcp.aituber.app
 }
 ```
 
-**Codex** - add to `~/.codex/config.toml`:
+### Codex
+
+Add to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.aituber]
 url = "https://mcp.aituber.app"
 ```
 
-When you first connect, your client opens a browser window to sign in to AITuber and approve access. After that it just works.
+### OpenClaw and other MCP clients
 
-### 2. npx with an API key
+Add a remote MCP server with the URL `https://mcp.aituber.app`. If your client supports OAuth, sign in when prompted. If it asks for credentials instead, use an API key (next section).
 
-Run the server locally with `npx` and authenticate with an API key. Use this if you prefer a key over browser sign-in, or need to run fully offline from a hosted server. The rest of this README covers this path.
+## Two ways to sign in
 
+**1. Your AITuber login (default).** Apps like Claude, ChatGPT, and Cursor open a browser window where you sign in and approve access. No key to copy, nothing to store.
+
+**2. An API key (servers, CI, automation).** Where a browser sign-in is not practical (a VPS, CI pipeline, n8n, cron), create a key at [app.aituber.app/dashboard/api-keys](https://app.aituber.app/dashboard/api-keys) (starts with `ak_`) and send it as a bearer token to the same URL:
+
+```bash
+claude mcp add --transport http aituber https://mcp.aituber.app \
+  --header "Authorization: Bearer ak_your_key_here"
+```
+
+```json
+{
+  "mcpServers": {
+    "aituber": {
+      "url": "https://mcp.aituber.app",
+      "headers": {
+        "Authorization": "Bearer ak_your_key_here"
+      }
+    }
+  }
+}
+```
+
+API keys are long-lived and revocable from the dashboard, so they fit unattended automation better than OAuth tokens.
 
 ## What you can do
 
@@ -57,59 +90,10 @@ Run the server locally with `npx` and authenticate with an API key. Use this if 
 - **Video templates** - skeleton X-ray style, character-driven stories
 - **Multiple media types** - AI-generated images, AI video clips, or real stock footage
 - **YouTube, TikTok, and Instagram** - publish directly to your connected channels
-- **Autopilot mode** - schedule automated video creation on a recurring basis (via dashboard)
 - **Export to MP4** - render and download the final video
 - **Check credits and plan** - monitor usage before generating
 
-## Quick start
-
-### 1. Get your API key
-
-Go to [app.aituber.app/dashboard/api-keys](https://app.aituber.app/dashboard/api-keys) and create an API key (it starts with `ak_`).
-
-### 2. Install
-
-**Claude Desktop** - add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "aituber": {
-      "command": "npx",
-      "args": ["-y", "@aituber/mcp-server"],
-      "env": {
-        "AITUBER_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-**Claude Code:**
-
-```bash
-claude mcp add aituber -e AITUBER_API_KEY=your_api_key_here -- npx -y @aituber/mcp-server
-```
-
-**Cursor** - add to `.cursor/mcp.json` in your project:
-
-```json
-{
-  "mcpServers": {
-    "aituber": {
-      "command": "npx",
-      "args": ["-y", "@aituber/mcp-server"],
-      "env": {
-        "AITUBER_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-**Windsurf and other MCP clients** - same pattern. Point the MCP server command to `npx -y @aituber/mcp-server` and set the `AITUBER_API_KEY` environment variable in the config.
-
-### 3. Start creating
+## Start creating
 
 Ask your AI assistant:
 
@@ -125,7 +109,7 @@ Ask your AI assistant:
 
 ## How it works
 
-This MCP server provides two tools:
+The server provides two tools:
 
 ### `search_api`
 
@@ -195,16 +179,9 @@ Publishing requires channels to already be connected through the AITuber dashboa
 | **Skeleton template** | Viral "what happens if..." X-ray style | Set `templateId: "skeleton"` |
 | **Character template** | Character-driven story format | Set `templateId: "character"` |
 
-## Configuration
+## About this repo (how the server works)
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `AITUBER_API_KEY` | Yes | - | Your API key from [AITuber dashboard](https://app.aituber.app/dashboard/api-keys) |
-| `AITUBER_API_BASE_URL` | No | `https://app.aituber.app/api/v1` | API base URL (override for self-hosted or testing) |
-
-## Remote server (Cloudflare Worker)
-
-The remote server at `https://mcp.aituber.app` is a Cloudflare Worker (`src/remote.ts`). It is a thin, stateless proxy: it verifies the caller's Clerk OAuth token, exposes the same `search_api` and `execute_api` tools, and forwards each call to the AITuber API with the caller's own token. There is no storage, no sessions, and no analytics.
+The server at `https://mcp.aituber.app` is a Cloudflare Worker (`src/remote.ts`). It is a thin, stateless proxy: it verifies your AITuber sign-in (Clerk OAuth token) or API key, exposes the `search_api` and `execute_api` tools, and forwards each call to the AITuber API with your own credential. There is no storage, no sessions, and no analytics. The endpoint catalog (`src/endpoints.generated.ts`) is generated from the API's OpenAPI definition, so the tools always match the live API.
 
 **Local dev:**
 
@@ -229,7 +206,6 @@ curl http://localhost:8787/.well-known/oauth-protected-resource    # RFC 9728 me
 ```bash
 # Set the production Clerk secret once (stored as a Worker secret, never committed):
 pnpm exec wrangler secret put CLERK_SECRET_KEY
-# Set the production pk_live_... key in wrangler.toml [vars] CLERK_PUBLISHABLE_KEY, then:
 pnpm deploy:remote     # runs wrangler deploy
 ```
 
@@ -238,7 +214,8 @@ pnpm deploy:remote     # runs wrangler deploy
 ## Links
 
 - [AITuber](https://aituber.app) - AI video creation tool
-- [API Documentation](https://app.aituber.app/api-docs) - Interactive API reference
+- [Setup Guide](https://aituber.app/mcp) - Connect from any client
+- [API Documentation](https://aituber.app/api) - Interactive API reference
 - [Dashboard](https://app.aituber.app/dashboard) - Manage videos and billing
 - [API Keys](https://app.aituber.app/dashboard/api-keys) - Create and manage your API keys
 
