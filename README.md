@@ -179,37 +179,9 @@ Publishing requires channels to already be connected through the AITuber dashboa
 | **Skeleton template** | Viral "what happens if..." X-ray style | Set `templateId: "skeleton"` |
 | **Character template** | Character-driven story format | Set `templateId: "character"` |
 
-## About this repo (how the server works)
+## Under the hood
 
-The server at `https://mcp.aituber.app` is a Cloudflare Worker (`src/remote.ts`). It is a thin, stateless proxy: it verifies your AITuber sign-in (Clerk OAuth token) or API key, exposes the `search_api` and `execute_api` tools, and forwards each call to the AITuber API with your own credential. There is no storage, no sessions, and no analytics. The endpoint catalog (`src/endpoints.generated.ts`) is generated from the API's OpenAPI definition, so the tools always match the live API.
-
-**Local dev:**
-
-```bash
-pnpm install
-# Create mcp/.dev.vars (gitignored) with:
-#   CLERK_PUBLISHABLE_KEY="pk_test_..."   (dev key)
-#   AITUBER_API_BASE_URL="https://app.aituber.app/api/v1"
-#   CLERK_SECRET_KEY="sk_test_..."        (dev secret)
-pnpm dev:remote        # runs wrangler dev
-```
-
-Quick checks against a running dev server:
-
-```bash
-curl http://localhost:8787/health                                  # {"ok":true}
-curl http://localhost:8787/.well-known/oauth-protected-resource    # RFC 9728 metadata
-```
-
-**Deploy:**
-
-```bash
-# Set the production Clerk secret once (stored as a Worker secret, never committed):
-pnpm exec wrangler secret put CLERK_SECRET_KEY
-pnpm deploy:remote     # runs wrangler deploy
-```
-
-`CLERK_PUBLISHABLE_KEY` and `AITUBER_API_BASE_URL` live in `wrangler.toml` under `[vars]` (public). `CLERK_SECRET_KEY` is a secret. Type-check both entry points with `pnpm typecheck`.
+The server is a stateless Cloudflare Worker (`src/remote.ts`, source in this repo). It verifies your AITuber sign-in or API key, exposes the `search_api` and `execute_api` tools, and forwards each call to the AITuber API with your own credential. Nothing is stored, there are no sessions, and there are no analytics. The endpoint catalog is generated from the API's OpenAPI definition, so the tools always match the live API. Dev and deploy notes: [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Links
 

@@ -416,7 +416,8 @@ async function handleMcp(
 const app = new Hono<{ Bindings: Env }>();
 
 // Health check (no auth).
-app.get("/health", (c) => c.json({ ok: true }));
+// Version included so we can tell which build is live after a deploy.
+app.get("/health", (c) => c.json({ ok: true, version: PACKAGE_VERSION }));
 
 // RFC 9728 Protected Resource Metadata (both the bare and /mcp-suffixed forms).
 app.on(
