@@ -109,4 +109,53 @@ export const EXAMPLES: Record<string, EndpointExamples> = {
   "DELETE /publications/{publicationId}": {
     example: "DELETE /publications/{publicationId}",
   },
+  "POST /ideas": {
+    example: {
+      prompt: "space facts for a faceless YouTube Shorts channel",
+      count: 10,
+    },
+  },
+  "POST /scripts": {
+    example: {
+      prompt: "5 mind-blowing facts about the deep ocean",
+      duration: 60,
+    },
+  },
+  "GET /image-styles": {
+    example: "GET /image-styles",
+  },
+  "GET /caption-styles": {
+    example: "GET /caption-styles",
+  },
+  "GET /voices/cloned": {
+    example: "GET /voices/cloned",
+  },
+  "DELETE /videos/{id}": {
+    example: "DELETE /videos/{id}",
+  },
+  "GET /clip-models": {
+    example: "GET /clip-models",
+  },
+  "POST /clips": {
+    examples: {
+      "Text to clip": {
+        prompt: "A golden retriever puppy running through a sunflower field, cinematic slow motion",
+        modelKey: "SEEDANCE_2_FAST",
+        aspectRatio: "9:16",
+        durationSeconds: 5,
+      },
+      "Animate an image": {
+        prompt: "The camera slowly zooms in while snow starts falling",
+        modelKey: "SEEDANCE_2_FAST",
+        firstFrameUrl: "https://example.com/your-image.jpg",
+        durationSeconds: 5,
+      },
+    },
+  },
+  "GET /clips": {
+    example: "GET /clips?limit=10",
+  },
+  "GET /clips/{id}": {
+    example: "GET /clips/{id}",
+  },
 };

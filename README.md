@@ -158,9 +158,19 @@ Publishing requires channels to already be connected through the AITuber dashboa
 | Endpoint | Description |
 |----------|-------------|
 | `GET /voices` | Browse 1,300+ AI voices with filters (public, no auth required) |
+| `GET /voices/cloned` | List voices you cloned in the dashboard |
+| `POST /ideas` | Get video topic ideas for a niche |
+| `POST /scripts` | Write a narration script from a topic |
+| `GET /image-styles` | List image styles for video generation |
+| `GET /caption-styles` | List caption styles for video generation |
 | `POST /videos/generate` | Create a video from a script or idea |
 | `GET /videos` | List all your videos |
 | `GET /videos/{id}` | Get video details and generation status |
+| `DELETE /videos/{id}` | Delete a video |
+| `GET /clip-models` | List AI models for standalone clips with capabilities and costs |
+| `POST /clips` | Generate a standalone AI video clip from a prompt or image |
+| `GET /clips` | List your clips |
+| `GET /clips/{id}` | Get clip status and download URL |
 | `GET /subscription` | Check your plan, credits, and billing info |
 | `POST /exports` | Start rendering a video to MP4 |
 | `GET /exports/download` | Get a temporary download URL for the MP4 |

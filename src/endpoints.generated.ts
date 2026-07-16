@@ -66,6 +66,90 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     ]
   },
   {
+    "method": "GET",
+    "path": "/voices/cloned",
+    "summary": "List your cloned voices",
+    "description": "Returns the voices you cloned in the AITuber dashboard. Use the `voiceId` value as `voiceId` in `POST /videos/generate` to narrate with your own voice. Voice cloning itself happens in the dashboard.",
+    "auth": true,
+    "params": []
+  },
+  {
+    "method": "POST",
+    "path": "/ideas",
+    "summary": "Get video topic ideas for a niche",
+    "description": "Generates a list of specific, viral-style video topic ideas for a niche or audience. Use an idea as the `script` in `POST /videos/generate` with `inputType: \"idea\"`, or expand it first with `POST /scripts`.\n\n**Cost:** 2 credits per call.",
+    "auth": true,
+    "params": [
+      {
+        "name": "prompt",
+        "in": "body",
+        "type": "string",
+        "required": true,
+        "description": "The niche, audience, or theme to brainstorm for. Example: \"space facts for a faceless YouTube Shorts channel\"."
+      },
+      {
+        "name": "language",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Language for the ideas (ISO 639-1 code like \"en\", \"es\", \"hi\"). Default: \"en\"."
+      },
+      {
+        "name": "count",
+        "in": "body",
+        "type": "number",
+        "required": false,
+        "description": "How many ideas to generate (5-15). Default: 10."
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/scripts",
+    "summary": "Write a video script from a topic",
+    "description": "Generates 2 distinct narration script variations for a topic, sized to your target duration. Pick the one you like (or edit it) and pass it to `POST /videos/generate` as the `script` with `inputType: \"script\"`.\n\n**Cost:** 1 credit per minute of target duration (minimum 1 credit).",
+    "auth": true,
+    "params": [
+      {
+        "name": "prompt",
+        "in": "body",
+        "type": "string",
+        "required": true,
+        "description": "The topic or idea to write a script about. Example: \"5 mind-blowing facts about the deep ocean\"."
+      },
+      {
+        "name": "duration",
+        "in": "body",
+        "type": "number",
+        "required": true,
+        "description": "Target video duration in seconds (15-1200). The script length is sized so narration fits this duration."
+      },
+      {
+        "name": "language",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Language for the script (ISO 639-1 code like \"en\", \"es\", \"hi\"). Default: English."
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/image-styles",
+    "summary": "List image styles",
+    "description": "Returns every image style you can use as `imageStyleId` in `POST /videos/generate` (when `mediaType` is `images`): the built-in styles plus any custom styles created in the AITuber dashboard.",
+    "auth": true,
+    "params": []
+  },
+  {
+    "method": "GET",
+    "path": "/caption-styles",
+    "summary": "List caption styles",
+    "description": "Returns every caption style you can use as `captionStyleId` in `POST /videos/generate`: the built-in styles plus any custom styles created in the AITuber dashboard.",
+    "auth": true,
+    "params": []
+  },
+  {
     "method": "POST",
     "path": "/videos/generate",
     "summary": "Create a new video",
@@ -183,7 +267,13 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "name": "limit",
         "in": "query",
         "type": "number",
-        "description": "Maximum number of videos to return. Default: 50, max: 100."
+        "description": "Maximum number of videos to return per page. Default: 50, max: 100."
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "type": "string (uuid)",
+        "description": "Pagination cursor: the `id` of the LAST video from the previous page. Returns videos older than that one. Omit for the first page. An empty array means there are no more videos."
       }
     ]
   },
@@ -200,6 +290,139 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "type": "string (uuid)",
         "required": true,
         "description": "The video ID returned from `POST /generate` or `GET /videos`."
+      }
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/videos/{id}",
+    "summary": "Delete a video",
+    "description": "Permanently deletes a video and its generated assets. This cannot be undone. Credits spent on generation are not refunded.",
+    "auth": true,
+    "params": [
+      {
+        "name": "id",
+        "in": "path",
+        "type": "string (uuid)",
+        "required": true,
+        "description": "The video ID to delete."
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/clip-models",
+    "summary": "List clip generation models",
+    "description": "Returns the AI video models available for standalone clip generation, with their capabilities (text-to-video, image-to-video, reference images), supported aspect ratios, resolutions, duration limits, and credit cost per second by resolution. Pick a `modelKey` for `POST /clips`.",
+    "auth": true,
+    "params": []
+  },
+  {
+    "method": "POST",
+    "path": "/clips",
+    "summary": "Generate a standalone AI video clip",
+    "description": "Starts generating a single AI video clip (1-15 seconds) from a text prompt, an image, or both. This is different from `POST /videos/generate`: no narration, no captions, just one raw clip.\n\n**Flow:** pick a model from `GET /clip-models`, create the clip, then poll `GET /clips/{id}` until `status` is `completed` and download from `outputUrl`. Typical generation takes 1-3 minutes.\n\n**Cost:** per second of clip, by model and resolution (see `creditsPerSecondByResolution` in `GET /clip-models`). Credits are reserved when the clip starts and refunded automatically if generation fails.\n\n**Requires an active paid subscription.**",
+    "auth": true,
+    "params": [
+      {
+        "name": "title",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Optional clip title. Defaults to the start of the prompt."
+      },
+      {
+        "name": "modelKey",
+        "in": "body",
+        "type": "string",
+        "required": true,
+        "description": "The generation model to use. Get valid keys, capabilities, and per-second costs from `GET /clip-models`."
+      },
+      {
+        "name": "prompt",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "What the clip should show. Required for text-to-video models; optional when animating from images."
+      },
+      {
+        "name": "aspectRatio",
+        "in": "body",
+        "type": "`16:9` \\| `9:16` \\| `4:3` \\| `3:4` \\| `1:1` \\| `21:9`",
+        "required": false,
+        "description": "Clip dimensions. Check the model's `supportedAspectRatios` from `GET /clip-models`. Default: \"16:9\"."
+      },
+      {
+        "name": "resolution",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Output resolution (e.g. \"720p\", \"1080p\"). Check the model's `supportedResolutions`. Higher resolutions cost more credits per second. Default: \"720p\"."
+      },
+      {
+        "name": "durationSeconds",
+        "in": "body",
+        "type": "integer",
+        "required": false,
+        "description": "Clip length in seconds (1-15, model dependent; check `minDurationSeconds`/`maxDurationSeconds`). Default: 5."
+      },
+      {
+        "name": "firstFrameUrl",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Public image URL to use as the first frame (image-to-video). Only for models with `supportsFirstFrame`."
+      },
+      {
+        "name": "lastFrameUrl",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Public image URL to use as the last frame. Only for models with `supportsLastFrame`."
+      },
+      {
+        "name": "referenceImageUrls",
+        "in": "body",
+        "type": "array of string",
+        "required": false,
+        "description": "Public image URLs used as style/subject references. Only for models with `supportsReferenceImages`; respect `maxReferenceImages`."
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/clips",
+    "summary": "List your clips",
+    "description": "Returns your standalone AI clips, newest first. For the next page, pass the `createdAt` of the last clip as `cursor`. An empty array means there are no more clips.",
+    "auth": true,
+    "params": [
+      {
+        "name": "limit",
+        "in": "query",
+        "type": "integer",
+        "description": "Maximum clips per page (1-50). Default: 20."
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "type": "datetime (ISO 8601)",
+        "description": "Pagination cursor: the `createdAt` of the last clip from the previous page. Omit for the first page."
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/clips/{id}",
+    "summary": "Get a clip by ID",
+    "description": "Returns a clip with its generation status. Poll every 10-15 seconds after `POST /clips` until `status` is `completed` (then download from `outputUrl`) or `failed` (see `errorMessage`; credits are refunded automatically).",
+    "auth": true,
+    "params": [
+      {
+        "name": "id",
+        "in": "path",
+        "type": "string (uuid)",
+        "required": true,
+        "description": "Clip ID from `POST /clips`."
       }
     ]
   },
