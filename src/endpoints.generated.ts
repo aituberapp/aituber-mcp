@@ -100,6 +100,20 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "type": "number",
         "required": false,
         "description": "How many ideas to generate (5-15). Default: 10."
+      },
+      {
+        "name": "source",
+        "in": "body",
+        "type": "`tool_page` \\| `inline`",
+        "required": false,
+        "description": "Where the request came from, for analytics only. Dashboard use; safe to omit."
+      },
+      {
+        "name": "templateId",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Creation template the request came from, for analytics only. Dashboard use; safe to omit."
       }
     ]
   },
@@ -130,6 +144,20 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "type": "string",
         "required": false,
         "description": "Language for the script (ISO 639-1 code like \"en\", \"es\", \"hi\"). Default: English."
+      },
+      {
+        "name": "source",
+        "in": "body",
+        "type": "`tool_page` \\| `inline`",
+        "required": false,
+        "description": "Where the request came from, for analytics only. Dashboard use; safe to omit."
+      },
+      {
+        "name": "templateId",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Creation template the request came from, for analytics only. Dashboard use; safe to omit."
       }
     ]
   },
