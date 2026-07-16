@@ -52,6 +52,31 @@ Each [bracketed text] tells the AI exactly what to show for that scene. The text
 
 Set templateId in POST /videos/generate. Templates override mediaType and imageStyleId automatically. For regular faceless narration videos, don't set templateId.`,
 
+  "avatars": `Avatar videos are talking-head videos where an avatar speaks your script to the camera. Created via POST /videos/generate with mediaType: "avatar".
+
+Flow:
+1. **List avatars** (GET /avatars): built-in avatars plus characters the user created in the AITuber dashboard. Each entry has an id, a preview image, and sometimes a defaultVoiceId.
+2. **Generate** (POST /videos/generate) with mediaType: "avatar", avatarId, script, and voiceId (REQUIRED for avatars, no default voice). Optional: motionPrompt (how the avatar moves and gestures), aspectRatio "9:16" or "16:9" (no square).
+3. **Poll** GET /videos/{id} until completed. Avatar generation is slower than other types (usually 3-10 minutes).
+
+Rules: script mode only (no inputType "idea" - write the script first, POST /scripts can help), max 5 minutes of video, script must be at least 5 words. Avatar videos cost far more credits than faceless videos (hundreds of credits per minute), so check the balance with GET /subscription for long scripts. Create NEW avatars via POST /elements (type "character", with a photo imageUrl or an uploaded imageAssetId), or in the dashboard.
+
+Example: { "script": "Hey, welcome back! Today I have three tips for you...", "mediaType": "avatar", "avatarId": "<id from GET /avatars>", "voiceId": "<id from GET /voices>", "motionPrompt": "friendly, natural hand gestures" }`,
+
+  "elements": `Elements are saved people/characters, products/props, and places with a REAL reference photo. Use them to put a specific face, product, or place in videos.
+
+**Use in faceless videos:** mention the element by handle inside the script sent to POST /videos/generate, e.g. "[@Dhiva holding @Red-Bottle] Meet the founder who started it all." The element's photo is fed to the image model, so the same face/product appears consistently in every scene. Rules: works with mediaType "images" (imageQuality must be "good" or higher) and "video"; NOT with "stock". The @ is never spoken aloud; unknown handles read as plain words.
+
+**Use as avatars:** a character element's id doubles as avatarId for talking-head videos (mediaType "avatar").
+
+**Discover:** GET /elements returns each element's @handle, type, and photo. GET /avatars lists just the characters.
+
+**Create via API:** two ways.
+1. One call: POST /elements with { name, type, imageUrl } - we download the photo from the public URL.
+2. Two calls for local files: POST /uploads { purpose: "element-image", contentType, fileSizeBytes } -> PUT the file bytes to the returned uploadUrl -> POST /elements with { name, type, imageAssetId }.
+
+IMPORTANT: the photo is the ONLY source of how an element looks. Never describe the person's or product's appearance in the script or the description field - the description is for context (what it is, when to use it).`,
+
   "publishing": `Publishing flow for AITuber videos:
 
 1. **Connect a channel** via the AITuber dashboard (OAuth). Supported for publishing: YouTube, TikTok, Instagram.
@@ -98,6 +123,20 @@ export function searchKnowledge(query: string): string | null {
     "image instruction": "visual control",
     "control": "visual control",
     "custom visual": "visual control",
+    "element": "elements",
+    "my face": "elements",
+    "my product": "elements",
+    "my photo": "elements",
+    "own image": "elements",
+    "reference photo": "elements",
+    "consistent character": "elements",
+    "brand": "elements",
+    "upload": "elements",
+    "avatar": "avatars",
+    "talking head": "avatars",
+    "talking-head": "avatars",
+    "spokesperson": "avatars",
+    "presenter": "avatars",
     "publish": "publishing",
     "channel": "publishing",
     "channels": "publishing",

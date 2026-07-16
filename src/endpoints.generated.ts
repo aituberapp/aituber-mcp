@@ -74,6 +74,110 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     "params": []
   },
   {
+    "method": "GET",
+    "path": "/avatars",
+    "summary": "List avatars for talking-head videos",
+    "description": "Returns every avatar you can use for talking-head videos: built-in avatars available to everyone, plus your own characters.\n\nPass the `id` as `avatarId` in `POST /videos/generate` with `mediaType: \"avatar\"`. Create a new avatar with `POST /elements` (type `character`, with a photo) or in the AITuber dashboard.",
+    "auth": true,
+    "params": []
+  },
+  {
+    "method": "GET",
+    "path": "/elements",
+    "summary": "List your elements",
+    "description": "Returns your saved elements: people/characters, products/props, and places, plus the built-in ones. Elements carry a real reference photo.\n\n**How to use them:** mention an element in a video script as `@handle` (for example `[@Dhiva holding @Red-Bottle] Meet the founder...`) and its photo is fed to the image model, so the same face or product appears consistently across the whole video. Characters can also be used as `avatarId` for talking-head videos.\n\nCreate new elements with `POST /elements` or in the AITuber dashboard.",
+    "auth": true,
+    "params": [
+      {
+        "name": "type",
+        "in": "query",
+        "type": "`character` \\| `prop` \\| `location`",
+        "description": "Filter by element type. Omit for all."
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/elements",
+    "summary": "Create an element",
+    "description": "Saves a reusable element (a person/character, product/prop, or place) with a reference photo.\n\n**Photo source, one of:**\n- `imageUrl`: a public URL; we download and store it.\n- `imageAssetId`: an asset from `POST /uploads` with purpose `element-image`.\n\n**After creating:** mention it in scripts as `@handle` (returned in the response) to put it in faceless videos, or use a character's `id` as `avatarId` for talking-head videos.\n\nThe photo is the single source of truth for how the element looks. Use `description` for context (what it is, when to use it), never for appearance.",
+    "auth": true,
+    "params": [
+      {
+        "name": "name",
+        "in": "body",
+        "type": "string",
+        "required": true,
+        "description": "Element name, used to build the @handle. Letters, numbers, spaces, and hyphens work best (e.g. \"Dhiva\", \"Red Bottle\")."
+      },
+      {
+        "name": "type",
+        "in": "body",
+        "type": "`character` \\| `prop` \\| `location`",
+        "required": true,
+        "description": "`character` = a person or mascot (also usable as an avatar), `prop` = an object or product, `location` = a place."
+      },
+      {
+        "name": "description",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Optional context notes (what it is, when to use it). Do NOT describe appearance; the photo decides how the element looks."
+      },
+      {
+        "name": "imageUrl",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Public URL of the reference photo (JPEG, PNG, or WebP, max 25MB). We download and store it. Use this OR imageAssetId."
+      },
+      {
+        "name": "imageAssetId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "An asset from `POST /uploads` with purpose `element-image`. Use this OR imageUrl."
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/uploads",
+    "summary": "Upload a media file",
+    "description": "Gets a media file into your AITuber library and returns an `assetId` you can pass to other endpoints. Every upload has a `purpose` that says what the file is for; the purpose decides the validation rules and where the asset can be used.\n\n**Two ways to upload:**\n\n**1. From a URL** (easiest, works from AI agents): pass `sourceUrl` and we download the file for you. The URL must be publicly reachable.\n\n**2. Direct upload** (for local files): pass `contentType` and `fileSizeBytes` and you get back an `uploadUrl`. PUT your file bytes to that URL within 1 hour (set the same Content-Type header), then use the `assetId`.\n\n**Supported purposes:**\n- `element-image`: a reference photo for an element (a person, product, or place). JPEG, PNG, or WebP, max 25MB. Use the resulting `assetId` in `POST /elements`.\n\nUploads that are never attached to anything are deleted after 7 days.",
+    "auth": true,
+    "params": [
+      {
+        "name": "purpose",
+        "in": "body",
+        "type": "`element-image`",
+        "required": true,
+        "description": "What this file is for. Only listed purposes are accepted; each unlocks specific endpoints (see the endpoint description)."
+      },
+      {
+        "name": "sourceUrl",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "A public URL to download the file from. Use this OR contentType+fileSizeBytes, not both."
+      },
+      {
+        "name": "contentType",
+        "in": "body",
+        "type": "`image/jpeg` \\| `image/png` \\| `image/webp`",
+        "required": false,
+        "description": "The file type for a direct upload. Returns an `uploadUrl` to PUT the bytes to."
+      },
+      {
+        "name": "fileSizeBytes",
+        "in": "body",
+        "type": "integer",
+        "required": false,
+        "description": "The file size in bytes for a direct upload. Max 25MB."
+      }
+    ]
+  },
+  {
     "method": "POST",
     "path": "/ideas",
     "summary": "Get video topic ideas for a niche",
@@ -189,7 +293,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "in": "body",
         "type": "string",
         "required": true,
-        "description": "The content for your video. How this field is used depends on `inputType`.\n\n**Script mode** (`inputType: \"script\"`, default): Provide the exact narration text. This is what the voice will speak word-for-word. Must be at least 5 words. Max 30,000 characters (enough for a 20-minute video at normal voice speed). The AI automatically splits it into visual segments and generates matching visuals.\n\n**Visual control:** By default, the AI decides what visuals to show for each part of your narration. For more control, add visual instructions in brackets before each narration segment:\n\n`[A dark forest at night] The wind howled through the trees. [Glowing eyes peering from shadows] Something was watching.`\n\nEach `[bracketed text]` tells the AI exactly what to show for that scene. The text after it is the voiceover.\n\n**Idea mode** (`inputType: \"idea\"`): Provide a short topic or concept. The AI writes a full narration script for you. Keep it under 800 characters. Pair with `expectedDurationSeconds` to control video length.\n\nSupports any language. The voice will speak naturally in whatever language the text is written in."
+        "description": "The content for your video. How this field is used depends on `inputType`.\n\n**Script mode** (`inputType: \"script\"`, default): Provide the exact narration text. This is what the voice will speak word-for-word. Must be at least 5 words. Max 30,000 characters (enough for a 20-minute video at normal voice speed). The AI automatically splits it into visual segments and generates matching visuals.\n\n**Visual control:** By default, the AI decides what visuals to show for each part of your narration. For more control, add visual instructions in brackets before each narration segment:\n\n`[A dark forest at night] The wind howled through the trees. [Glowing eyes peering from shadows] Something was watching.`\n\nEach `[bracketed text]` tells the AI exactly what to show for that scene. The text after it is the voiceover.\n\n**Put a real person, product, or place in the video (@mentions):** reference a saved element by its handle, e.g. `[@Dhiva holding @Red-Bottle] Meet the founder who started it all.` The element's reference photo is fed to the image model so the same face or product appears consistently across the whole video. Get handles from `GET /elements`; create new elements with `POST /elements`. Rules: works with `mediaType` `images` (needs `imageQuality` `good` or higher) and `video`; not with `stock`. The photo decides how the element looks; never describe its appearance in the script. Mentions are spoken as the plain name (the `@` is never read aloud), and unknown handles are treated as plain words.\n\n**Idea mode** (`inputType: \"idea\"`): Provide a short topic or concept. The AI writes a full narration script for you. Keep it under 800 characters. Pair with `expectedDurationSeconds` to control video length.\n\nSupports any language. The voice will speak naturally in whatever language the text is written in."
       },
       {
         "name": "inputType",
@@ -201,16 +305,30 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
       {
         "name": "mediaType",
         "in": "body",
-        "type": "`images` \\| `video` \\| `stock`",
+        "type": "`images` \\| `video` \\| `stock` \\| `avatar`",
         "required": false,
-        "description": "The type of visuals for your video. Each produces a different look and feel.\n\n- `images` (default): AI generates a unique image for each segment, displayed with smooth Ken Burns pan/zoom animation. This is the classic \"faceless narration video\" style used by top YouTube channels. Most popular and cheapest option. Control the look with `imageQuality` and `imageStyleId`.\n- `video`: AI generates short video clips for each segment. More dynamic and cinematic than images, but costs more credits. Also used internally by the `skeleton` and `character` templates.\n- `stock`: Automatically finds and matches real stock footage to each segment. Great for news, educational, and documentary-style content.\n\n**For most use cases, leave this as default (`images`) unless you are using a template.** When using `templateId`, the template automatically selects the best media type for you, so you do not need to set `mediaType` separately."
+        "description": "The type of visuals for your video. Each produces a different look and feel.\n\n- `images` (default): AI generates a unique image for each segment, displayed with smooth Ken Burns pan/zoom animation. This is the classic \"faceless narration video\" style used by top YouTube channels. Most popular and cheapest option. Control the look with `imageQuality` and `imageStyleId`.\n- `video`: AI generates short video clips for each segment. More dynamic and cinematic than images, but costs more credits. Also used internally by the `skeleton` and `character` templates.\n- `stock`: Automatically finds and matches real stock footage to each segment. Great for news, educational, and documentary-style content.\n- `avatar`: A talking-head video where an avatar speaks your script. **Requires `avatarId` (from `GET /avatars`) and `voiceId`.** Script mode only (no idea mode), max 5 minutes, aspect ratio `9:16` or `16:9`. Costs ~840 credits per minute of video plus narration, far more than other media types. Generation also takes longer (usually 3-10 minutes).\n\n**For most use cases, leave this as default (`images`) unless you are using a template.** When using `templateId`, the template automatically selects the best media type for you, so you do not need to set `mediaType` separately."
+      },
+      {
+        "name": "avatarId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "**Required when `mediaType` is `\"avatar\"`.** The avatar that speaks your script. Get valid IDs from `GET /avatars` (built-in avatars plus characters created in the dashboard). Ignored for other media types."
+      },
+      {
+        "name": "motionPrompt",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Optional direction for how the avatar moves and gestures, e.g. \"excited, talking with hands, leaning toward the camera\". Only applies when `mediaType` is `\"avatar\"`."
       },
       {
         "name": "voiceId",
         "in": "body",
         "type": "string",
         "required": false,
-        "description": "The voice ID for narration. Browse all 1,300+ available voices and listen to previews at `GET /voices`.\n\nIf omitted, defaults to \"Adam\", a deep, natural American male voice.\n\nFilter voices by gender, accent, or use case using the `GET /voices` endpoint query parameters. Use the `previewUrl` from each voice to hear a sample before selecting."
+        "description": "The voice ID for narration. Browse all 1,300+ available voices and listen to previews at `GET /voices`, or use one of your cloned voices from `GET /voices/cloned`.\n\nIf omitted, defaults to \"Adam\", a deep, natural American male voice. **Exception: required when `mediaType` is `\"avatar\"`** (no default; pick a voice that fits the avatar, or use its `defaultVoiceId` from `GET /avatars`).\n\nFilter voices by gender, accent, or use case using the `GET /voices` endpoint query parameters. Use the `previewUrl` from each voice to hear a sample before selecting."
       },
       {
         "name": "voiceSpeed",
@@ -224,7 +342,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "in": "body",
         "type": "`9:16` \\| `16:9` \\| `1:1`",
         "required": false,
-        "description": "Video dimensions. Choose based on where you plan to publish.\n\n- `9:16` (default): Vertical/portrait. Best for YouTube Shorts, TikTok, and Instagram Reels.\n- `16:9`: Horizontal/landscape. Best for standard YouTube videos and presentations.\n- `1:1`: Square. Best for Instagram feed posts and LinkedIn."
+        "description": "Video dimensions. Choose based on where you plan to publish.\n\n- `9:16` (default): Vertical/portrait. Best for YouTube Shorts, TikTok, and Instagram Reels.\n- `16:9`: Horizontal/landscape. Best for standard YouTube videos and presentations.\n- `1:1`: Square. Best for Instagram feed posts and LinkedIn. Not available for `mediaType: \"avatar\"`."
       },
       {
         "name": "expectedDurationSeconds",
@@ -238,7 +356,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "in": "body",
         "type": "`basic` \\| `good` \\| `premium` \\| `max`",
         "required": false,
-        "description": "Image generation quality tier. Only applies when `mediaType` is `\"images\"`. Higher quality produces more detailed, accurate images but costs more credits per image.\n\n- `basic` (default): 1 credit/image. Fast generation. Good for testing and drafts.\n- `good`: 6 credits/image. Better detail and accuracy. Good for most published content.\n- `premium`: 16 credits/image. High detail, very accurate to the script. Great for professional content.\n- `max`: 30 credits/image. Maximum quality. Best for high-production content.\n\nA typical 60-second video has 15-18 images (one every 3-5 seconds), so factor that into credit calculations."
+        "description": "Image generation quality tier. Only applies when `mediaType` is `\"images\"`. Higher quality produces more detailed, accurate images but costs more credits per image.\n\n- `basic` (default): 1 credit/image. Fast generation. Good for testing and drafts.\n- `good`: 6 credits/image. Better detail and accuracy. Good for most published content.\n- `premium`: 16 credits/image. High detail, very accurate to the script. Great for professional content.\n- `max`: 30 credits/image. Maximum quality. Best for high-production content.\n\nA typical 60-second video has 15-18 images (one every 3-5 seconds), so factor that into credit calculations.\n\nScripts that @mention saved elements need `good` or higher (photo references need a capable image model); `basic` returns a 400."
       },
       {
         "name": "imageStyleId",
@@ -266,7 +384,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "in": "body",
         "type": "string",
         "required": false,
-        "description": "Vertical position of captions on the video.\n\n- `bottom` (default): Captions at the bottom of the screen.\n- `center`: Captions in the middle of the screen.\n- `top`: Captions at the top of the screen."
+        "description": "Vertical position of captions on the video.\n\n- `bottom` (default): Captions at the bottom of the screen.\n- `center`: Captions in the middle of the screen.\n- `top`: Captions at the top of the screen.\n\nNot supported for `mediaType: \"avatar\"` (avatar captions always use the default position)."
       },
       {
         "name": "videoQuality",
@@ -280,7 +398,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "in": "body",
         "type": "string",
         "required": false,
-        "description": "Specialized video template that applies a specific visual format and style. Leave empty for standard faceless narration videos (the default).\n\n**Available templates:**\n- `skeleton`: \"What happens if...\" style educational videos with skeleton/X-ray visuals. Uses AI video generation internally. Popular viral format on YouTube Shorts. Example script: `\"What happens if you eat only ice cream for 30 days\"`.\n- `character`: Character-driven animated videos. AI generates a consistent character across all scenes and animates them. Uses AI video generation internally. Example script: `\"A robot learns what friendship means on its first day at school\"`.\n\n**Important:** When you set a template, it automatically handles `mediaType` and visual settings for you. You do not need to set `mediaType`, `imageQuality`, or `imageStyleId` separately. Just provide your `script` (or `inputType: \"idea\"` with a topic) and the template takes care of the rest."
+        "description": "Specialized video template that applies a specific visual format and style. Leave empty for standard faceless narration videos (the default).\n\n**Available templates:**\n- `skeleton`: \"What happens if...\" style educational videos with skeleton/X-ray visuals. Uses AI video generation internally. Popular viral format on YouTube Shorts. Example script: `\"What happens if you eat only ice cream for 30 days\"`.\n- `character`: Character-driven animated videos. AI generates a consistent character across all scenes and animates them. Uses AI video generation internally. Example script: `\"A robot learns what friendship means on its first day at school\"`.\n\n**Important:** When you set a template, it automatically handles `mediaType` and visual settings for you. You do not need to set `mediaType`, `imageQuality`, or `imageStyleId` separately. Just provide your `script` (or `inputType: \"idea\"` with a topic) and the template takes care of the rest.\n\nFor talking-head avatar videos, do NOT use a template: set `mediaType: \"avatar\"` with an `avatarId` instead."
       }
     ]
   },

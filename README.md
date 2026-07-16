@@ -159,6 +159,10 @@ Publishing requires channels to already be connected through the AITuber dashboa
 |----------|-------------|
 | `GET /voices` | Browse 1,300+ AI voices with filters (public, no auth required) |
 | `GET /voices/cloned` | List voices you cloned in the dashboard |
+| `GET /avatars` | List avatars for talking-head videos |
+| `GET /elements` | List saved people, products, and places (with @handles) |
+| `POST /elements` | Save an element from a photo URL or uploaded asset |
+| `POST /uploads` | Upload media (from a URL or a direct PUT) |
 | `POST /ideas` | Get video topic ideas for a niche |
 | `POST /scripts` | Write a narration script from a topic |
 | `GET /image-styles` | List image styles for video generation |
@@ -188,6 +192,7 @@ Publishing requires channels to already be connected through the AITuber dashboa
 | **Stock footage** | Real stock footage matched to narration | Set `mediaType: "stock"` |
 | **Skeleton template** | Viral "what happens if..." X-ray style | Set `templateId: "skeleton"` |
 | **Character template** | Character-driven story format | Set `templateId: "character"` |
+| **Avatar (talking head)** | An avatar speaks your script to the camera | Set `mediaType: "avatar"` + `avatarId` + `voiceId` |
 
 ## Under the hood
 

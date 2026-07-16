@@ -35,6 +35,14 @@ export const EXAMPLES: Record<string, EndpointExamples> = {
         inputType: "idea",
         expectedDurationSeconds: 90,
       },
+      "Avatar (talking head)": {
+        script:
+          "Hey, I am so glad you are here. Today I want to show you three simple habits that completely changed how I work.",
+        mediaType: "avatar",
+        avatarId: "3f2c8a1e-5b6d-4c7e-9f0a-1b2c3d4e5f6a", // replace with a real id from GET /avatars
+        voiceId: "your-voice-id-from-GET-/voices",
+        motionPrompt: "warm and friendly, natural hand gestures",
+      },
       "Script with visual control": {
         script:
           "[A dark forest at night] The wind howled through the ancient trees. [Glowing eyes peering from the shadows] Deep in the darkness, something was watching. [A figure running through moonlight] She had to escape before it was too late.",
@@ -129,6 +137,40 @@ export const EXAMPLES: Record<string, EndpointExamples> = {
   },
   "GET /voices/cloned": {
     example: "GET /voices/cloned",
+  },
+  "GET /avatars": {
+    example: "GET /avatars",
+  },
+  "GET /elements": {
+    example: "GET /elements?type=character",
+  },
+  "POST /elements": {
+    examples: {
+      "From a public photo URL": {
+        name: "Dhiva",
+        type: "character",
+        imageUrl: "https://example.com/photos/dhiva.jpg",
+      },
+      "Product from an uploaded asset": {
+        name: "Red-Bottle",
+        type: "prop",
+        description: "Our flagship 500ml bottle, use in product videos",
+        imageAssetId: "3f2c8a1e-5b6d-4c7e-9f0a-1b2c3d4e5f6a",
+      },
+    },
+  },
+  "POST /uploads": {
+    examples: {
+      "From a URL (agents)": {
+        purpose: "element-image",
+        sourceUrl: "https://example.com/photos/dhiva.jpg",
+      },
+      "Direct upload (local file)": {
+        purpose: "element-image",
+        contentType: "image/png",
+        fileSizeBytes: 245760,
+      },
+    },
   },
   "DELETE /videos/{id}": {
     example: "DELETE /videos/{id}",
