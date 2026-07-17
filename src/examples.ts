@@ -159,6 +159,34 @@ export const EXAMPLES: Record<string, EndpointExamples> = {
       },
     },
   },
+  "GET /ugc/reactions": {
+    example: "GET /ugc/reactions",
+  },
+  "POST /ugc/reactions": {
+    example: {
+      elementId: "3f2c8a1e-5b6d-4c7e-9f0a-1b2c3d4e5f6a",
+      hookText: "I can't believe this actually works",
+      quality: "good",
+    },
+  },
+  "GET /ugc/reactions/{id}": {
+    example: "GET /ugc/reactions/{id}",
+  },
+  "POST /ugc/videos": {
+    examples: {
+      "Reaction + hook only": {
+        reactionId: "a1b2c3d4-0000-0000-0000-000000000000",
+        hookText: "This changed how I work forever",
+        aspectRatio: "9:16",
+      },
+      "Reaction + hook + product demo": {
+        reactionId: "a1b2c3d4-0000-0000-0000-000000000000",
+        hookText: "Watch what happens next",
+        demoVideoAssetId: "b2c3d4e5-0000-0000-0000-000000000000",
+        hookTextPosition: "top",
+      },
+    },
+  },
   "POST /uploads": {
     examples: {
       "From a URL (agents)": {

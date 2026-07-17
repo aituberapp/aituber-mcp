@@ -163,6 +163,10 @@ Publishing requires channels to already be connected through the AITuber dashboa
 | `GET /elements` | List saved people, products, and places (with @handles) |
 | `POST /elements` | Save an element from a photo URL or uploaded asset |
 | `POST /uploads` | Upload media (from a URL or a direct PUT) |
+| `GET /ugc/reactions` | List UGC reaction clips (library + your own) |
+| `POST /ugc/reactions` | Generate a reaction clip from your character |
+| `GET /ugc/reactions/{id}` | Get a reaction clip status |
+| `POST /ugc/videos` | Build a finished UGC hook video |
 | `POST /ideas` | Get video topic ideas for a niche |
 | `POST /scripts` | Write a narration script from a topic |
 | `GET /image-styles` | List image styles for video generation |

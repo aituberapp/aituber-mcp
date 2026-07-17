@@ -144,13 +144,13 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     "method": "POST",
     "path": "/uploads",
     "summary": "Upload a media file",
-    "description": "Gets a media file into your AITuber library and returns an `assetId` you can pass to other endpoints. Every upload has a `purpose` that says what the file is for; the purpose decides the validation rules and where the asset can be used.\n\n**Two ways to upload:**\n\n**1. From a URL** (easiest, works from AI agents): pass `sourceUrl` and we download the file for you. The URL must be publicly reachable.\n\n**2. Direct upload** (for local files): pass `contentType` and `fileSizeBytes` and you get back an `uploadUrl`. PUT your file bytes to that URL within 1 hour (set the same Content-Type header), then use the `assetId`.\n\n**Supported purposes:**\n- `element-image`: a reference photo for an element (a person, product, or place). JPEG, PNG, or WebP, max 25MB. Use the resulting `assetId` in `POST /elements`.\n\nUploads that are never attached to anything are deleted after 7 days.",
+    "description": "Gets a media file into your AITuber library and returns an `assetId` you can pass to other endpoints. Every upload has a `purpose` that says what the file is for; the purpose decides the validation rules and where the asset can be used.\n\n**Two ways to upload:**\n\n**1. From a URL** (easiest, works from AI agents): pass `sourceUrl` and we download the file for you. Only available for small image purposes (not video).\n\n**2. Direct upload** (for local files): pass `contentType` and `fileSizeBytes` and you get back an `uploadUrl`. PUT your file bytes to that URL within 1 hour (set the same Content-Type header), then use the `assetId`.\n\n**Supported purposes:**\n- `element-image`: a reference photo for an element (a person, product, or place). JPEG, PNG, or WebP, max 25MB. URL upload allowed. Use the `assetId` in `POST /elements`.\n- `ugc-demo`: a product demo video for a UGC hook video. MP4, MOV, or WebM, max 200MB, up to 3 minutes. Direct upload only. Use the `assetId` as `demoVideoAssetId` in `POST /ugc/videos`.\n\nUploads that are never attached to anything are deleted after 7 days.",
     "auth": true,
     "params": [
       {
         "name": "purpose",
         "in": "body",
-        "type": "`element-image`",
+        "type": "`element-image` \\| `ugc-demo`",
         "required": true,
         "description": "What this file is for. Only listed purposes are accepted; each unlocks specific endpoints (see the endpoint description)."
       },
@@ -159,21 +159,161 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "in": "body",
         "type": "string",
         "required": false,
-        "description": "A public URL to download the file from. Use this OR contentType+fileSizeBytes, not both."
+        "description": "A public URL to download the file from (image purposes only). Use this OR contentType+fileSizeBytes, not both."
       },
       {
         "name": "contentType",
         "in": "body",
-        "type": "`image/jpeg` \\| `image/png` \\| `image/webp`",
+        "type": "`image/jpeg` \\| `image/png` \\| `image/webp` \\| `video/mp4` \\| `video/quicktime` \\| `video/webm`",
         "required": false,
-        "description": "The file type for a direct upload. Returns an `uploadUrl` to PUT the bytes to."
+        "description": "The file type for a direct upload. Returns an `uploadUrl` to PUT the bytes to. Must match the purpose (image vs video)."
       },
       {
         "name": "fileSizeBytes",
         "in": "body",
         "type": "integer",
         "required": false,
-        "description": "The file size in bytes for a direct upload. Max 25MB."
+        "description": "The file size in bytes for a direct upload. Max depends on the purpose (25MB images, 200MB video)."
+      },
+      {
+        "name": "durationSeconds",
+        "in": "body",
+        "type": "number",
+        "required": false,
+        "description": "For video uploads (ugc-demo): REQUIRED. The clip length in seconds (1-180). Used to time the demo segment."
+      },
+      {
+        "name": "videoWidth",
+        "in": "body",
+        "type": "integer",
+        "required": false,
+        "description": "For video uploads (ugc-demo): the pixel width. Recommended so the demo is framed correctly."
+      },
+      {
+        "name": "videoHeight",
+        "in": "body",
+        "type": "integer",
+        "required": false,
+        "description": "For video uploads (ugc-demo): the pixel height. Recommended so the demo is framed correctly."
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/ugc/reactions",
+    "summary": "List UGC reaction clips",
+    "description": "Returns short clips of a person reacting to camera: the built-in library plus reactions you generated. Pick one by `id` and use it as `reactionId` in `POST /ugc/videos` to build a finished UGC hook video. The name and tags describe the person and the reaction, so you can choose one that fits your hook.",
+    "auth": true,
+    "params": []
+  },
+  {
+    "method": "POST",
+    "path": "/ugc/reactions",
+    "summary": "Generate a UGC reaction clip",
+    "description": "Generates a short clip of your character reacting to camera, using image-to-video AI. The character is one of your `character` elements (create one with `POST /elements`).\n\n**Flow:** create the reaction, then poll `GET /ugc/reactions/{id}` until `status` is `completed`. The finished clip also appears in `GET /ugc/reactions` and can be used as `reactionId` in `POST /ugc/videos`.\n\n**Cost:** by quality (see the response `creditsUsed`). Credits are refunded automatically if generation fails.\n\nRequires an active paid subscription.",
+    "auth": true,
+    "params": [
+      {
+        "name": "elementId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": true,
+        "description": "The character element to react. Get IDs from `GET /elements` (type `character`) or create one with `POST /elements`."
+      },
+      {
+        "name": "hookText",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "The hook the character is reacting to. The AI turns it into a fitting expression. Provide this OR reactionPrompt."
+      },
+      {
+        "name": "reactionPrompt",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Direct control over the reaction, e.g. \"shocked, eyes wide, leaning back\". Provide this OR hookText."
+      },
+      {
+        "name": "quality",
+        "in": "body",
+        "type": "`good` \\| `premium`",
+        "required": false,
+        "description": "Generation quality. `premium` costs more and looks better."
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/ugc/reactions/{id}",
+    "summary": "Get a reaction clip",
+    "description": "Returns a reaction you generated. Poll every 10-15 seconds after `POST /ugc/reactions` until `status` is `completed` (then use `videoUrl` or the `id` as `reactionId` in `POST /ugc/videos`) or `failed` (credits are refunded automatically).",
+    "auth": true,
+    "params": [
+      {
+        "name": "id",
+        "in": "path",
+        "type": "string (uuid)",
+        "required": true,
+        "description": "Reaction ID from `POST /ugc/reactions`."
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/ugc/videos",
+    "summary": "Create a UGC hook video",
+    "description": "Builds a finished UGC-style hook video: a person reaction clip with your hook text on top, optionally followed by your product demo video.\n\n**Inputs:**\n- `reactionId`: a clip from `GET /ugc/reactions` (built-in or one you generated).\n- `hookText`: the on-screen hook (5-200 characters).\n- `demoVideoAssetId` (optional): a product demo video uploaded with `POST /uploads` (purpose `ugc-demo`).\n\nReturns a `videoId`. This one is ready immediately (`status: completed`); export it with `POST /exports` and download with `GET /exports/download`, or publish it.\n\n**Cost:** flat fee (see `creditsUsed`). Requires an active paid subscription.",
+    "auth": true,
+    "params": [
+      {
+        "name": "reactionId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": true,
+        "description": "A reaction clip from `GET /ugc/reactions`."
+      },
+      {
+        "name": "hookText",
+        "in": "body",
+        "type": "string",
+        "required": true,
+        "description": "The on-screen hook text (5-200 characters)."
+      },
+      {
+        "name": "demoVideoAssetId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "Optional product demo video, uploaded via `POST /uploads` (purpose `ugc-demo`). Plays after the reaction."
+      },
+      {
+        "name": "hookTextPosition",
+        "in": "body",
+        "type": "`top` \\| `center` \\| `bottom`",
+        "required": false,
+        "description": "Where the hook text sits."
+      },
+      {
+        "name": "aspectRatio",
+        "in": "body",
+        "type": "`9:16` \\| `16:9` \\| `1:1`",
+        "required": false,
+        "description": "Video dimensions."
+      },
+      {
+        "name": "captionStyleId",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Caption style ID from `GET /caption-styles`. Default: \"tiktok\"."
+      },
+      {
+        "name": "title",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Optional video title."
       }
     ]
   },

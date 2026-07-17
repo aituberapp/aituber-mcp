@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 
 # Inline the package version at build time (read by src/remote.ts).
 [define]
-__PACKAGE_VERSION__ = "\"1.9.0\""
+__PACKAGE_VERSION__ = "\"1.10.0\""
 
 # Serve the remote MCP server from https://mcp.aituber.app
 [[routes]]

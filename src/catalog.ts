@@ -77,6 +77,16 @@ Example: { "script": "Hey, welcome back! Today I have three tips for you...", "m
 
 IMPORTANT: the photo is the ONLY source of how an element looks. Never describe the person's or product's appearance in the script or the description field - the description is for context (what it is, when to use it).`,
 
+  "ugc": `UGC hook videos are short ads where a real-looking person reacts to camera with your hook text on screen, optionally followed by your product demo. Build one like this:
+
+1. **Pick or make a reaction clip.**
+   - Browse ready-made ones: GET /ugc/reactions (built-in library + your own). Each has a descriptive name and tags so you can choose a fitting person/mood.
+   - Or generate a custom one from YOUR character: POST /ugc/reactions with elementId (a "character" element from GET /elements) + hookText (or reactionPrompt) + quality. Poll GET /ugc/reactions/{id} until completed.
+2. **(Optional) Upload a product demo video:** POST /uploads with purpose "ugc-demo" (direct upload only; MP4/MOV/WebM, max 200MB, up to 3 min), then use the assetId.
+3. **Build the finished video:** POST /ugc/videos with reactionId + hookText (+ optional demoVideoAssetId, aspectRatio, captionStyleId). It returns a videoId that is ready immediately - export it (POST /exports) and download (GET /exports/download) or publish it.
+
+Notes: generating a reaction and building the video both need an active paid plan. The person's face in a generated reaction comes from your character element's photo. Demo video upload needs a real file (PUT), so it is API-friendly but not doable from a chat-only agent.`,
+
   "publishing": `Publishing flow for AITuber videos:
 
 1. **Connect a channel** via the AITuber dashboard (OAuth). Supported for publishing: YouTube, TikTok, Instagram.
@@ -132,6 +142,12 @@ export function searchKnowledge(query: string): string | null {
     "consistent character": "elements",
     "brand": "elements",
     "upload": "elements",
+    "ugc": "ugc",
+    "reaction": "ugc",
+    "hook video": "ugc",
+    "hook ad": "ugc",
+    "testimonial": "ugc",
+    "spokesperson video": "ugc",
     "avatar": "avatars",
     "talking head": "avatars",
     "talking-head": "avatars",
