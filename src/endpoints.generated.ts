@@ -144,13 +144,13 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     "method": "POST",
     "path": "/uploads",
     "summary": "Upload a media file",
-    "description": "Gets a media file into your AITuber library and returns an `assetId` you can pass to other endpoints. Every upload has a `purpose` that says what the file is for; the purpose decides the validation rules and where the asset can be used.\n\n**Two ways to upload:**\n\n**1. From a URL** (easiest, works from AI agents): pass `sourceUrl` and we download the file for you. Only available for small image purposes (not video).\n\n**2. Direct upload** (for local files): pass `contentType` and `fileSizeBytes` and you get back an `uploadUrl`. PUT your file bytes to that URL within 1 hour (set the same Content-Type header), then use the `assetId`.\n\n**Supported purposes:**\n- `element-image`: a reference photo for an element (a person, product, or place). JPEG, PNG, or WebP, max 25MB. URL upload allowed. Use the `assetId` in `POST /elements`.\n- `ugc-demo`: a product demo video for a UGC hook video. MP4, MOV, or WebM, max 200MB, up to 3 minutes. Direct upload only. Use the `assetId` as `demoVideoAssetId` in `POST /ugc/videos`.\n- `music`: an audio track to score a music video. MP3, WAV, M4A, or AAC, max 50MB. Direct upload only, and `durationSeconds` is REQUIRED. Use the `assetId` as `musicAssetId` in `POST /music-videos`.\n\nUploads that are never attached to anything are deleted after 7 days.",
+    "description": "Gets a media file into your AITuber library and returns an `assetId` you can pass to other endpoints. Every upload has a `purpose` that says what the file is for; the purpose decides the validation rules and where the asset can be used.\n\n**Two ways to upload:**\n\n**1. From a URL** (easiest, works from AI agents): pass `sourceUrl` and we download the file for you. Only available for small image purposes (not video).\n\n**2. Direct upload** (for local files): pass `contentType` and `fileSizeBytes` and you get back an `uploadUrl`. PUT your file bytes to that URL within 1 hour (set the same Content-Type header), then use the `assetId`.\n\n**Supported purposes:**\n- `element-image`: a reference photo for an element (a person, product, or place). JPEG, PNG, or WebP, max 25MB. URL upload allowed. Use the `assetId` in `POST /elements`.\n- `ugc-demo`: a product demo video for a UGC hook video. MP4, MOV, or WebM, max 200MB, up to 3 minutes. Direct upload only. Use the `assetId` as `demoVideoAssetId` in `POST /ugc/videos`.\n- `music`: an audio track to score a music video. MP3, WAV, M4A, or AAC, max 50MB. Direct upload only, and `durationSeconds` is REQUIRED. Use the `assetId` as `musicAssetId` in `POST /music-videos`.\n- `voice-sample`: an audio sample for voice cloning. MP3, WAV, M4A, AAC, OGG, or WebM, max 25MB. Direct upload only. Pass the `assetId` to the voice clone endpoint.\n\nUploads that are never attached to anything are deleted after 7 days.",
     "auth": true,
     "params": [
       {
         "name": "purpose",
         "in": "body",
-        "type": "`element-image` \\| `ugc-demo` \\| `music`",
+        "type": "`element-image` \\| `ugc-demo` \\| `music` \\| `voice-sample`",
         "required": true,
         "description": "What this file is for. Only listed purposes are accepted; each unlocks specific endpoints (see the endpoint description)."
       },
@@ -164,7 +164,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
       {
         "name": "contentType",
         "in": "body",
-        "type": "`image/jpeg` \\| `image/png` \\| `image/webp` \\| `video/mp4` \\| `video/quicktime` \\| `video/webm` \\| `audio/mpeg` \\| `audio/wav` \\| `audio/mp4` \\| `audio/x-m4a` \\| `audio/aac`",
+        "type": "`image/jpeg` \\| `image/png` \\| `image/webp` \\| `video/mp4` \\| `video/quicktime` \\| `video/webm` \\| `audio/mpeg` \\| `audio/wav` \\| `audio/mp4` \\| `audio/x-m4a` \\| `audio/aac` \\| `audio/mp3` \\| `audio/wave` \\| `audio/x-wav` \\| `audio/ogg` \\| `audio/webm`",
         "required": false,
         "description": "The file type for a direct upload. Returns an `uploadUrl` to PUT the bytes to. Must match the purpose (image, video, or audio)."
       },
