@@ -87,6 +87,22 @@ IMPORTANT: the photo is the ONLY source of how an element looks. Never describe 
 
 Notes: generating a reaction and building the video both need an active paid plan. The person's face in a generated reaction comes from your character element's photo. Demo video upload needs a real file (PUT), so it is API-friendly but not doable from a chat-only agent.`,
 
+  "music": `Music videos pair a song with AI visuals, synced lyric captions, and an optional waveform. There is NO talking-head / avatar mode for music videos.
+
+**Get a song (two ways):**
+1. Generate one: POST /music with a prompt (e.g. "upbeat synthwave about late-night driving"). Optional: instrumental (no vocals), or customMode with your own style + title + lyrics. Poll GET /music/{id} until status is "completed". Use the id as musicId.
+2. Upload your own: POST /uploads with purpose "music" (direct upload only; MP3/WAV/M4A/AAC, max 50MB, durationSeconds REQUIRED). Use the returned assetId as musicAssetId.
+
+**Build the video:** POST /music-videos with exactly ONE of musicId (generated) or musicAssetId (uploaded), plus visualMode:
+- "ai-images": a new AI image every few seconds (secondsPerImage, imageQuality, imageStyleId from GET /image-styles).
+- "ai-video": short AI video clips across the song (videoQuality).
+- "cover-image": one still image for the whole song (coverImageAssetId, uploaded via POST /uploads purpose "element-image").
+Other options: visualDirection, aspectRatio, captionsEnabled + captionStyleId (GET /caption-styles) + captionPosition, showWaveform, musicTrimStartSeconds / musicTrimEndSeconds.
+
+It returns a videoId. Poll GET /videos/{id} until completed, then export (POST /exports) and download (GET /exports/download), or publish.
+
+Notes: browse your library with GET /music (generated songs + uploaded tracks). Both song generation and music video generation cost credits (refunded automatically on failure); check the balance with GET /subscription.`,
+
   "publishing": `Publishing flow for AITuber videos:
 
 1. **Connect a channel** via the AITuber dashboard (OAuth). Supported for publishing: YouTube, TikTok, Instagram.
@@ -153,6 +169,13 @@ export function searchKnowledge(query: string): string | null {
     "talking-head": "avatars",
     "spokesperson": "avatars",
     "presenter": "avatars",
+    "music": "music",
+    "song": "music",
+    "music video": "music",
+    "soundtrack": "music",
+    "suno": "music",
+    "lyrics": "music",
+    "instrumental": "music",
     "publish": "publishing",
     "channel": "publishing",
     "channels": "publishing",

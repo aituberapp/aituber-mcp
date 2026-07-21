@@ -144,13 +144,13 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     "method": "POST",
     "path": "/uploads",
     "summary": "Upload a media file",
-    "description": "Gets a media file into your AITuber library and returns an `assetId` you can pass to other endpoints. Every upload has a `purpose` that says what the file is for; the purpose decides the validation rules and where the asset can be used.\n\n**Two ways to upload:**\n\n**1. From a URL** (easiest, works from AI agents): pass `sourceUrl` and we download the file for you. Only available for small image purposes (not video).\n\n**2. Direct upload** (for local files): pass `contentType` and `fileSizeBytes` and you get back an `uploadUrl`. PUT your file bytes to that URL within 1 hour (set the same Content-Type header), then use the `assetId`.\n\n**Supported purposes:**\n- `element-image`: a reference photo for an element (a person, product, or place). JPEG, PNG, or WebP, max 25MB. URL upload allowed. Use the `assetId` in `POST /elements`.\n- `ugc-demo`: a product demo video for a UGC hook video. MP4, MOV, or WebM, max 200MB, up to 3 minutes. Direct upload only. Use the `assetId` as `demoVideoAssetId` in `POST /ugc/videos`.\n\nUploads that are never attached to anything are deleted after 7 days.",
+    "description": "Gets a media file into your AITuber library and returns an `assetId` you can pass to other endpoints. Every upload has a `purpose` that says what the file is for; the purpose decides the validation rules and where the asset can be used.\n\n**Two ways to upload:**\n\n**1. From a URL** (easiest, works from AI agents): pass `sourceUrl` and we download the file for you. Only available for small image purposes (not video).\n\n**2. Direct upload** (for local files): pass `contentType` and `fileSizeBytes` and you get back an `uploadUrl`. PUT your file bytes to that URL within 1 hour (set the same Content-Type header), then use the `assetId`.\n\n**Supported purposes:**\n- `element-image`: a reference photo for an element (a person, product, or place). JPEG, PNG, or WebP, max 25MB. URL upload allowed. Use the `assetId` in `POST /elements`.\n- `ugc-demo`: a product demo video for a UGC hook video. MP4, MOV, or WebM, max 200MB, up to 3 minutes. Direct upload only. Use the `assetId` as `demoVideoAssetId` in `POST /ugc/videos`.\n- `music`: an audio track to score a music video. MP3, WAV, M4A, or AAC, max 50MB. Direct upload only, and `durationSeconds` is REQUIRED. Use the `assetId` as `musicAssetId` in `POST /music-videos`.\n\nUploads that are never attached to anything are deleted after 7 days.",
     "auth": true,
     "params": [
       {
         "name": "purpose",
         "in": "body",
-        "type": "`element-image` \\| `ugc-demo`",
+        "type": "`element-image` \\| `ugc-demo` \\| `music`",
         "required": true,
         "description": "What this file is for. Only listed purposes are accepted; each unlocks specific endpoints (see the endpoint description)."
       },
@@ -164,23 +164,23 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
       {
         "name": "contentType",
         "in": "body",
-        "type": "`image/jpeg` \\| `image/png` \\| `image/webp` \\| `video/mp4` \\| `video/quicktime` \\| `video/webm`",
+        "type": "`image/jpeg` \\| `image/png` \\| `image/webp` \\| `video/mp4` \\| `video/quicktime` \\| `video/webm` \\| `audio/mpeg` \\| `audio/wav` \\| `audio/mp4` \\| `audio/x-m4a` \\| `audio/aac`",
         "required": false,
-        "description": "The file type for a direct upload. Returns an `uploadUrl` to PUT the bytes to. Must match the purpose (image vs video)."
+        "description": "The file type for a direct upload. Returns an `uploadUrl` to PUT the bytes to. Must match the purpose (image, video, or audio)."
       },
       {
         "name": "fileSizeBytes",
         "in": "body",
         "type": "integer",
         "required": false,
-        "description": "The file size in bytes for a direct upload. Max depends on the purpose (25MB images, 200MB video)."
+        "description": "The file size in bytes for a direct upload. Max depends on the purpose (25MB images, 200MB video, 50MB audio)."
       },
       {
         "name": "durationSeconds",
         "in": "body",
         "type": "number",
         "required": false,
-        "description": "For video uploads (ugc-demo): REQUIRED. The clip length in seconds (1-180). Used to time the demo segment."
+        "description": "For video (ugc-demo, 1-180) and audio (music, 1-600) uploads: REQUIRED. The clip or track length in seconds. Used to time the segment."
       },
       {
         "name": "videoWidth",
@@ -202,7 +202,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     "method": "GET",
     "path": "/ugc/reactions",
     "summary": "List UGC reaction clips",
-    "description": "Returns short clips of a person reacting to camera: the built-in library plus reactions you generated. Pick one by `id` and use it as `reactionId` in `POST /ugc/videos` to build a finished UGC hook video. The name and tags describe the person and the reaction, so you can choose one that fits your hook.",
+    "description": "Returns short clips of a person reacting to camera, split into `system` (the built-in library) and `custom` (reactions you generated). Pick one by `id` and use it as `reactionId` in `POST /ugc/videos` to build a finished UGC hook video. The name and tags describe the person and the reaction, so you can choose one that fits your hook. For your own reactions, check `status` (`pending`, `processing`, `completed`, or `failed`); built-in reactions are always ready.",
     "auth": true,
     "params": []
   },
@@ -214,18 +214,25 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     "auth": true,
     "params": [
       {
-        "name": "elementId",
-        "in": "body",
-        "type": "string (uuid)",
-        "required": true,
-        "description": "The character element to react. Get IDs from `GET /elements` (type `character`) or create one with `POST /elements`."
-      },
-      {
-        "name": "hookText",
+        "name": "avatarImageUrl",
         "in": "body",
         "type": "string",
         "required": false,
-        "description": "The hook the character is reacting to. The AI turns it into a fitting expression. Provide this OR reactionPrompt."
+        "description": "Dashboard use only. Public callers pass `elementId` instead; an avatarImageUrl from the public API must be an AITuber-hosted asset URL."
+      },
+      {
+        "name": "elementId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "The character element to react. Get IDs from `GET /elements` (type `character`) or create one with `POST /elements`."
+      },
+      {
+        "name": "avatarId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "Legacy avatar ID. Prefer `elementId`."
       },
       {
         "name": "reactionPrompt",
@@ -233,6 +240,13 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "type": "string",
         "required": false,
         "description": "Direct control over the reaction, e.g. \"shocked, eyes wide, leaning back\". Provide this OR hookText."
+      },
+      {
+        "name": "hookText",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "The hook the character is reacting to. The AI turns it into a fitting expression. Provide this OR reactionPrompt."
       },
       {
         "name": "quality",
@@ -267,13 +281,6 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     "auth": true,
     "params": [
       {
-        "name": "reactionId",
-        "in": "body",
-        "type": "string (uuid)",
-        "required": true,
-        "description": "A reaction clip from `GET /ugc/reactions`."
-      },
-      {
         "name": "hookText",
         "in": "body",
         "type": "string",
@@ -281,11 +288,53 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "description": "The on-screen hook text (5-200 characters)."
       },
       {
+        "name": "reactionId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "A reaction clip from `GET /ugc/reactions`."
+      },
+      {
+        "name": "ugcVideoId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "Dashboard alias for `reactionId`. Public callers use `reactionId`."
+      },
+      {
         "name": "demoVideoAssetId",
         "in": "body",
         "type": "string (uuid)",
         "required": false,
         "description": "Optional product demo video, uploaded via `POST /uploads` (purpose `ugc-demo`). Plays after the reaction."
+      },
+      {
+        "name": "demoVideoUrl",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Dashboard use only. Public callers pass `demoVideoAssetId` instead."
+      },
+      {
+        "name": "demoDurationSeconds",
+        "in": "body",
+        "type": "number",
+        "required": false,
+        "description": "Dashboard use only. Required when `demoVideoUrl` is set."
+      },
+      {
+        "name": "demoVideoWidth",
+        "in": "body",
+        "type": "integer",
+        "required": false,
+        "description": "Dashboard use only."
+      },
+      {
+        "name": "demoVideoHeight",
+        "in": "body",
+        "type": "integer",
+        "required": false,
+        "description": "Dashboard use only."
       },
       {
         "name": "hookTextPosition",
@@ -302,6 +351,20 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "description": "Video dimensions."
       },
       {
+        "name": "backgroundMusicId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "Dashboard use only. Background music track ID."
+      },
+      {
+        "name": "backgroundMusicVolume",
+        "in": "body",
+        "type": "number",
+        "required": false,
+        "description": "Dashboard use only. Background music volume (0-100)."
+      },
+      {
         "name": "captionStyleId",
         "in": "body",
         "type": "string",
@@ -314,6 +377,202 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
         "type": "string",
         "required": false,
         "description": "Optional video title."
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/music",
+    "summary": "Generate a song",
+    "description": "Generates an original song from a text prompt using AI. Use it as the soundtrack for a music video (`POST /music-videos`), or download it once ready.\n\n**Flow:** create the song, then poll `GET /music/{id}` until `status` is `completed` (usually 30-90 seconds). The finished track also appears in `GET /music` and can be used as `musicId` in `POST /music-videos`.\n\n**Modes:**\n- Simple (default): describe the song in `prompt` and the AI writes everything (style, and lyrics unless `instrumental`).\n- Custom (`customMode: true`): you control `style`, `title`, and `lyrics` directly. `prompt` is ignored for the words.\n\n**Cost:** a flat fee per song (see the response `creditsUsed`). Credits are refunded automatically if generation fails.",
+    "auth": true,
+    "params": [
+      {
+        "name": "prompt",
+        "in": "body",
+        "type": "string",
+        "required": true,
+        "description": "What the song should be about or sound like, e.g. \"an upbeat indie pop track about summer road trips\". In custom mode this is optional context; the words come from `lyrics` and the sound from `style`."
+      },
+      {
+        "name": "instrumental",
+        "in": "body",
+        "type": "boolean",
+        "required": false,
+        "description": "Set true for a track with no vocals or lyrics."
+      },
+      {
+        "name": "customMode",
+        "in": "body",
+        "type": "boolean",
+        "required": false,
+        "description": "Set true to control `style`, `title`, and `lyrics` yourself instead of letting the AI decide from `prompt`."
+      },
+      {
+        "name": "style",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Custom mode only: the musical style, e.g. \"lo-fi hip hop, mellow, jazzy piano\"."
+      },
+      {
+        "name": "title",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Custom mode only: the song title."
+      },
+      {
+        "name": "lyrics",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Custom mode only: the exact lyrics to sing. Ignored when `instrumental` is true."
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/music",
+    "summary": "List songs",
+    "description": "Lists tracks in your music library: songs you generated with `POST /music` and audio you uploaded with `POST /uploads` (purpose `music`). Pick one to score a music video: use a generated song as `musicId` or an uploaded track as `musicAssetId` in `POST /music-videos`.",
+    "auth": true,
+    "params": []
+  },
+  {
+    "method": "GET",
+    "path": "/music/{id}",
+    "summary": "Get a song",
+    "description": "Returns a song you generated. Poll every 10-15 seconds after `POST /music` until `status` is `completed` (then use `audioUrl`, or the `id` as `musicId` in `POST /music-videos`) or `failed` (credits are refunded automatically).",
+    "auth": true,
+    "params": [
+      {
+        "name": "id",
+        "in": "path",
+        "type": "string (uuid)",
+        "required": true,
+        "description": "Song ID from `POST /music`."
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/music-videos",
+    "summary": "Create a music video",
+    "description": "Builds a music video: your song plus AI visuals, synced captions, and an optional waveform.\n\n**Pick the song (exactly one):**\n- `musicId`: a completed song from `POST /music` (see `GET /music`).\n- `musicAssetId`: a track you uploaded with `POST /uploads` (purpose `music`).\n\n**Pick the visuals with `visualMode`:**\n- `ai-images`: AI generates a new image every few seconds (set `secondsPerImage`).\n- `ai-video`: AI generates short video clips across the song.\n- `cover-image`: a single still image for the whole song (requires `coverImageAssetId`).\n\nReturns a `videoId` (a video). Poll `GET /videos/{id}` until `status` is `completed`, then export it with `POST /exports` and download with `GET /exports/download`, or publish it.\n\n**Cost:** depends on the visual mode, quality, and song length (see the response `estimatedCredits`). Credits are refunded automatically if generation fails.",
+    "auth": true,
+    "params": [
+      {
+        "name": "musicId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "A completed song from `POST /music`. Provide this OR `musicAssetId`, not both."
+      },
+      {
+        "name": "musicAssetId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "A track uploaded with `POST /uploads` (purpose `music`). Provide this OR `musicId`, not both."
+      },
+      {
+        "name": "visualMode",
+        "in": "body",
+        "type": "`ai-images` \\| `ai-video` \\| `cover-image`",
+        "required": true,
+        "description": "`ai-images` (a new AI image every few seconds), `ai-video` (short AI clips), or `cover-image` (one still for the whole song)."
+      },
+      {
+        "name": "visualDirection",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Optional art direction for the visuals, e.g. \"neon cyberpunk city at night, moody\"."
+      },
+      {
+        "name": "imageStyleId",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Image style for `ai-images`/`ai-video`. Get IDs from `GET /image-styles`."
+      },
+      {
+        "name": "imageQuality",
+        "in": "body",
+        "type": "`basic` \\| `good` \\| `premium` \\| `max`",
+        "required": false,
+        "description": "Image quality for `ai-images` (higher costs more)."
+      },
+      {
+        "name": "secondsPerImage",
+        "in": "body",
+        "type": "number",
+        "required": false,
+        "description": "For `ai-images`: how many seconds each image is shown. Fewer seconds means more images and more credits."
+      },
+      {
+        "name": "videoQuality",
+        "in": "body",
+        "type": "`basic` \\| `good` \\| `premium`",
+        "required": false,
+        "description": "Clip quality for `ai-video` (higher costs more)."
+      },
+      {
+        "name": "coverImageAssetId",
+        "in": "body",
+        "type": "string (uuid)",
+        "required": false,
+        "description": "For `cover-image` mode: an image uploaded with `POST /uploads` (purpose `element-image`). Required for that mode."
+      },
+      {
+        "name": "aspectRatio",
+        "in": "body",
+        "type": "`9:16` \\| `16:9` \\| `1:1`",
+        "required": false,
+        "description": "Video dimensions."
+      },
+      {
+        "name": "captionsEnabled",
+        "in": "body",
+        "type": "boolean",
+        "required": false,
+        "description": "Show word-synced lyric captions. Automatically off for instrumental tracks."
+      },
+      {
+        "name": "captionStyleId",
+        "in": "body",
+        "type": "string",
+        "required": false,
+        "description": "Caption style ID from `GET /caption-styles`."
+      },
+      {
+        "name": "captionPosition",
+        "in": "body",
+        "type": "`top` \\| `center` \\| `bottom`",
+        "required": false,
+        "description": "Where captions sit on screen."
+      },
+      {
+        "name": "showWaveform",
+        "in": "body",
+        "type": "boolean",
+        "required": false,
+        "description": "Show an audio waveform animation."
+      },
+      {
+        "name": "musicTrimStartSeconds",
+        "in": "body",
+        "type": "number",
+        "required": false,
+        "description": "Start the video at this point in the song (seconds). Defaults to the start."
+      },
+      {
+        "name": "musicTrimEndSeconds",
+        "in": "body",
+        "type": "number",
+        "required": false,
+        "description": "End the video at this point in the song (seconds). Defaults to the full length."
       }
     ]
   },

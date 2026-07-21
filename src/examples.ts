@@ -200,6 +200,51 @@ export const EXAMPLES: Record<string, EndpointExamples> = {
       },
     },
   },
+  "POST /music": {
+    examples: {
+      "Simple (AI writes everything)": {
+        prompt: "an upbeat indie pop track about summer road trips, warm and nostalgic",
+      },
+      "Instrumental": {
+        prompt: "calm lo-fi hip hop for studying, mellow jazzy piano",
+        instrumental: true,
+      },
+      "Custom (your own lyrics and style)": {
+        customMode: true,
+        title: "City Lights",
+        style: "synthwave, driving, retro 80s",
+        lyrics: "Neon glow on empty streets\nEngine humming to the beat",
+      },
+    },
+  },
+  "GET /music": {
+    example: "GET /music",
+  },
+  "GET /music/{id}": {
+    example: "GET /music/{id}",
+  },
+  "POST /music-videos": {
+    examples: {
+      "Generated song + AI images": {
+        musicId: "generated-song-id-from-POST-/music",
+        visualMode: "ai-images",
+        imageStyleId: "cinematic",
+        secondsPerImage: 4,
+      },
+      "Uploaded track + AI video clips": {
+        musicAssetId: "uploaded-track-id-from-POST-/uploads",
+        visualMode: "ai-video",
+        videoQuality: "good",
+        visualDirection: "neon cyberpunk city at night, moody",
+      },
+      "Single cover image": {
+        musicId: "generated-song-id-from-POST-/music",
+        visualMode: "cover-image",
+        coverImageAssetId: "image-id-from-POST-/uploads-purpose-element-image",
+        showWaveform: true,
+      },
+    },
+  },
   "DELETE /videos/{id}": {
     example: "DELETE /videos/{id}",
   },

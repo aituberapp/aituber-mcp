@@ -89,6 +89,7 @@ API keys are long-lived and revocable from the dashboard, so they fit unattended
 - **27+ visual styles** - photorealistic, anime, cinematic, 3D Pixar, watercolor, comic book, and more
 - **Video templates** - skeleton X-ray style, character-driven stories
 - **Multiple media types** - AI-generated images, AI video clips, or real stock footage
+- **Music videos** - generate a song from a prompt (or upload your own track) and turn it into a music video with AI visuals and synced lyric captions
 - **YouTube, TikTok, and Instagram** - publish directly to your connected channels
 - **Export to MP4** - render and download the final video
 - **Check credits and plan** - monitor usage before generating
@@ -153,6 +154,13 @@ execute_api(method: "POST", path: "/videos/generate", body: {
 
 Publishing requires channels to already be connected through the AITuber dashboard and an active paid plan with the Publish feature. If the video is not exported yet, the API starts the export automatically.
 
+**Generate a music video**
+
+1. **Make a song** - call `POST /music` with a prompt (or upload a track with `POST /uploads` purpose `music`)
+2. **Poll the song** - call `GET /music/{id}` until status is `completed`
+3. **Build the video** - call `POST /music-videos` with the `musicId` (or `musicAssetId`) and a `visualMode` (`ai-images`, `ai-video`, or `cover-image`)
+4. **Poll the video** - call `GET /videos/{id}` until status is `completed`, then export or publish it
+
 ## API endpoints
 
 | Endpoint | Description |
@@ -167,6 +175,10 @@ Publishing requires channels to already be connected through the AITuber dashboa
 | `POST /ugc/reactions` | Generate a reaction clip from your character |
 | `GET /ugc/reactions/{id}` | Get a reaction clip status |
 | `POST /ugc/videos` | Build a finished UGC hook video |
+| `POST /music` | Generate an original song from a prompt |
+| `GET /music` | List your generated and uploaded tracks |
+| `GET /music/{id}` | Get a song's status and audio URL |
+| `POST /music-videos` | Turn a song into a music video with AI visuals |
 | `POST /ideas` | Get video topic ideas for a niche |
 | `POST /scripts` | Write a narration script from a topic |
 | `GET /image-styles` | List image styles for video generation |
